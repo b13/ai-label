@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" date="2026-07-29T00:00:00Z" product-name="ai_label">
+        <header/>
+        <body>
+            <trans-unit id="field.ai_created">
+                <source>AI created</source>
+            </trans-unit>
+            <trans-unit id="field.ai_modified">
+                <source>AI modified</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

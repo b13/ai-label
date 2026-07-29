@@ -1,0 +1,19 @@
+{
+    "name": "b13/ai-label",
+    "type": "typo3-cms-extension",
+    "description": "Adds AI-created / AI-modified checkboxes to every backend-editable record and stores them in a dedicated table.",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "typo3/cms-core": "^13.4 || ^14.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "B13\\AiLabel\\": "Classes/"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "ai_label"
+        }
+    }
+}

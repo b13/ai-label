@@ -12,6 +12,12 @@
             <trans-unit id="tabs.aiMetadata">
                 <source>AI Metadata</source>
             </trans-unit>
+            <trans-unit id="field.reviewed">
+                <source>Reviewed</source>
+            </trans-unit>
+            <trans-unit id="notice.reviewRequired">
+                <source>Review required</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

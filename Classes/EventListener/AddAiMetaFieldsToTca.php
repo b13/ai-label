@@ -66,8 +66,42 @@ final class AddAiMetaFieldsToTca
                     'default' => 0,
                 ],
             ];
+            // Only relevant while the record is flagged as AI-created/-modified
+            $tca[$tableName]['columns']['reviewed'] = [
+                'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.reviewed',
+                'config' => [
+                    'type' => 'check',
+                    'renderType' => 'checkboxToggle',
+                    'default' => 0,
+                ],
+                'displayCond' => [
+                    'OR' => [
+                        'FIELD:ai_created:=:1',
+                        'FIELD:ai_modified:=:1',
+                    ],
+                ],
+            ];
+            // Pure notice, not persisted - shown next to "reviewed" while it is unset
+            $tca[$tableName]['columns']['ai_review_required_notice'] = [
+                'label' => '',
+                'config' => [
+                    'type' => 'user',
+                    'renderType' => 'aiLabelReviewRequiredNotice',
+                ],
+                'displayCond' => [
+                    'AND' => [
+                        'FIELD:reviewed:=:0',
+                        [
+                            'OR' => [
+                                'FIELD:ai_created:=:1',
+                                'FIELD:ai_modified:=:1',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
-                'showitem' => 'ai_created, ai_modified',
+                'showitem' => 'ai_created, ai_modified, --linebreak--, reviewed, ai_review_required_notice',
             ];
 
             foreach ($tableConfig['types'] ?? [] as $typeKey => $typeConfig) {

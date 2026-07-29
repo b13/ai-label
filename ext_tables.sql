@@ -8,8 +8,9 @@ CREATE TABLE tx_ailabel_domain_model_meta (
     uid_foreign int(11) unsigned DEFAULT '0' NOT NULL,
     ai_created tinyint(1) unsigned DEFAULT '0' NOT NULL,
     ai_modified tinyint(1) unsigned DEFAULT '0' NOT NULL,
+    reviewed tinyint(1) unsigned DEFAULT '0' NOT NULL,
     be_user_id int(11) unsigned DEFAULT '0' NOT NULL,
 
     PRIMARY KEY (uid),
-    UNIQUE KEY table_record (tablename(191), uid_foreign)
+    KEY table_record (tablename(191), uid_foreign)
 );

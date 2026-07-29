@@ -72,6 +72,7 @@ final class AddAiMetaFieldsToTca
 
             foreach ($tableConfig['types'] ?? [] as $typeKey => $typeConfig) {
                 $tca[$tableName]['types'][$typeKey]['showitem'] = rtrim($typeConfig['showitem'] ?? '', ', ')
+                    . ', --div--;LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:tabs.aiMetadata'
                     . ', --palette--;;aiLabelMetadata';
             }
         }

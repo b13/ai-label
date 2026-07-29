@@ -9,6 +9,9 @@
             <trans-unit id="field.ai_modified">
                 <source>AI modified</source>
             </trans-unit>
+            <trans-unit id="tabs.aiMetadata">
+                <source>AI Metadata</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

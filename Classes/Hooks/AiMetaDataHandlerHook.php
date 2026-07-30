@@ -80,12 +80,22 @@ final class AiMetaDataHandlerHook
         $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
         $needsReviewReset = $contentChanged && $aiFlagged && $wasReviewed && !$reviewedJustTicked;
 
+        // reviewed_date only moves when reviewed actually flips from unreviewed to
+        // reviewed in this save; it's cleared again once a reset makes it unreviewed,
+        // and otherwise just keeps whatever was stored before.
+        $reviewedDate = match (true) {
+            $needsReviewReset => 0,
+            $reviewedJustTicked => (int)($GLOBALS['EXEC_TIME'] ?? time()),
+            default => (int)($existingMetadata['reviewed_date'] ?? 0),
+        };
+
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
         // column - passing an already-encoded string here would double-encode it.
         $fieldArray['ai_metadata'] = [
             'ai_created' => $aiCreated,
             'ai_modified' => $aiModified,
             'reviewed_by' => $needsReviewReset ? 0 : $reviewedBy,
+            'reviewed_date' => $reviewedDate,
         ];
     }
 

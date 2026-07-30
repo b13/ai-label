@@ -22,6 +22,40 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 // was already reviewed must still reset it.
 final class AiMetaDataHandlerHook
 {
+    /** @var array<string, array{ai_created: bool, ai_modified: bool, reviewed: bool}> */
+    private array $pendingValues = [];
+
+    /**
+     * Runs before DataHandler's own fillInFieldArray()/checkValue()/
+     * compareFieldArrayWithCurrentAndUnset() ever see these fields. That last one
+     * reads $currentRecord[$col] for every submitted field to decide whether it is
+     * unchanged - since these 3 fields have no real column of their own, that access
+     * is an undefined array key, and TYPO3's error handler turns that PHP warning
+     * into a thrown exception, aborting the whole save. Stripping them here, before
+     * they ever reach that code, avoids it entirely.
+     */
+    public function processDatamap_preProcessFieldArray(
+        array &$incomingFieldArray,
+        string $table,
+        int|string $id,
+        DataHandler $dataHandler
+    ): void {
+        if (
+            !array_key_exists('ai_created', $incomingFieldArray)
+            && !array_key_exists('ai_modified', $incomingFieldArray)
+            && !array_key_exists('reviewed', $incomingFieldArray)
+        ) {
+            return;
+        }
+
+        $this->pendingValues["$table:$id"] = [
+            'ai_created' => (bool)($incomingFieldArray['ai_created'] ?? false),
+            'ai_modified' => (bool)($incomingFieldArray['ai_modified'] ?? false),
+            'reviewed' => (bool)($incomingFieldArray['reviewed'] ?? false),
+        ];
+        unset($incomingFieldArray['ai_created'], $incomingFieldArray['ai_modified'], $incomingFieldArray['reviewed']);
+    }
+
     public function processDatamap_postProcessFieldArray(
         string $status,
         string $table,
@@ -29,26 +63,16 @@ final class AiMetaDataHandlerHook
         array &$fieldArray,
         DataHandler $dataHandler
     ): void {
-        // Read from the untouched original submission, not from $fieldArray: DataHandler's
-        // compareFieldArrayWithCurrentAndUnset() strips a field whose submitted value is
-        // considered "equal to stored" - and since these 3 fields have no real column of
-        // their own to compare against, unchecking one (submitting 0) gets treated as
-        // unchanged and silently dropped from $fieldArray before this hook ever sees it.
-        $incoming = $dataHandler->datamap[$table][$id] ?? [];
-        if (
-            !array_key_exists('ai_created', $incoming)
-            && !array_key_exists('ai_modified', $incoming)
-            && !array_key_exists('reviewed', $incoming)
-        ) {
+        $key = "$table:$id";
+        if (!isset($this->pendingValues[$key])) {
             return;
         }
+        $values = $this->pendingValues[$key];
+        unset($this->pendingValues[$key]);
 
-        // They have no real column of their own - never let them reach the SQL query.
-        unset($fieldArray['ai_created'], $fieldArray['ai_modified'], $fieldArray['reviewed']);
-
-        $aiCreated = (bool)($incoming['ai_created'] ?? false);
-        $aiModified = (bool)($incoming['ai_modified'] ?? false);
-        $reviewed = (bool)($incoming['reviewed'] ?? false);
+        $aiCreated = $values['ai_created'];
+        $aiModified = $values['ai_modified'];
+        $reviewed = $values['reviewed'];
         $aiFlagged = $aiCreated || $aiModified;
 
         $existing = $status === 'update'

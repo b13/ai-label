@@ -7,7 +7,6 @@ namespace B13\AiLabel\Configuration;
 use B13\AiLabel\Event\ApplicableTablesEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
-
 final class ApplicableTablesProvider
 {
     private const DEFAULT_TABLES = [

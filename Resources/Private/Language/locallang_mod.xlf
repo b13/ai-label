@@ -30,6 +30,9 @@
             <trans-unit id="overview.empty.message">
                 <source>No records are currently flagged as AI-created or AI-modified.</source>
             </trans-unit>
+            <trans-unit id="overview.pagination">
+                <source>Pagination</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

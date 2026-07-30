@@ -8,27 +8,61 @@ use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
+use TYPO3\CMS\Core\Pagination\ArrayPaginator;
+use TYPO3\CMS\Core\Pagination\SlidingWindowPagination;
 
 #[AsController]
 final class AiLabelOverviewController
 {
+    private const ITEMS_PER_PAGE = 25;
+    private const MODULE_IDENTIFIER = 'web_ai_label_overview';
+
     public function __construct(
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AiMetadataRecordFinder $recordFinder,
+        private readonly UriBuilder $uriBuilder,
     ) {
     }
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
+        $currentPageNumber = max(1, (int)($request->getQueryParams()['currentPage'] ?? 1));
+
+        $paginator = new ArrayPaginator($this->recordFinder->findFlaggedRecords(), $currentPageNumber, self::ITEMS_PER_PAGE);
+        $pagination = new SlidingWindowPagination($paginator, 7);
+
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $moduleTemplate->setTitle(
             $GLOBALS['LANG']->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab')
         );
         $moduleTemplate->assignMultiple([
-            'records' => $this->recordFinder->findFlaggedRecords(),
+            'paginator' => $paginator,
+            'pagination' => $pagination,
+            'pageUris' => $this->buildPageUris($pagination),
+            'previousPageUri' => $this->buildPageUri($pagination->getPreviousPageNumber()),
+            'nextPageUri' => $this->buildPageUri($pagination->getNextPageNumber()),
         ]);
 
         return $moduleTemplate->renderResponse('Overview/Index');
+    }
+
+    /** @return array<int, string> */
+    private function buildPageUris(SlidingWindowPagination $pagination): array
+    {
+        $uris = [];
+        foreach ($pagination->getAllPageNumbers() as $pageNumber) {
+            $uris[$pageNumber] = (string)$this->buildPageUri($pageNumber);
+        }
+        return $uris;
+    }
+
+    private function buildPageUri(?int $pageNumber): ?string
+    {
+        if ($pageNumber === null) {
+            return null;
+        }
+        return (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER, ['currentPage' => $pageNumber]);
     }
 }

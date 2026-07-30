@@ -84,6 +84,14 @@ final class AiMetaDataHandlerHook
             return;
         }
 
+        if (!$aiFlagged) {
+            // Unflagged now: nothing worth tracking anymore. NULL the column
+            // (instead of storing all-zero JSON) so AiMetadataRecordFinder's
+            // "WHERE ai_metadata IS NOT NULL" stays an accurate filter on its own.
+            $fieldArray['ai_metadata'] = null;
+            return;
+        }
+
         $beUserId = (int)($dataHandler->BE_USER->user['uid'] ?? 0);
 
         // "reviewed wins" only applies if the editor actively ticked reviewed in this

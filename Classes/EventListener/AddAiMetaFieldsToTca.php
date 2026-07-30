@@ -52,6 +52,7 @@ final class AddAiMetaFieldsToTca
 
             $tca[$tableName]['columns']['ai_created'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_created',
+                'onChange' => 'reload',
                 'config' => [
                     'type' => 'check',
                     'renderType' => 'checkboxToggle',
@@ -60,6 +61,7 @@ final class AddAiMetaFieldsToTca
             ];
             $tca[$tableName]['columns']['ai_modified'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_modified',
+                'onChange' => 'reload',
                 'config' => [
                     'type' => 'check',
                     'renderType' => 'checkboxToggle',

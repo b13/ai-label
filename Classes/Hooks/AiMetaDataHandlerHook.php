@@ -19,9 +19,13 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 // appends a fresh row with reviewed reset to 0, so the editor has to review again -
 // but only if the latest existing row doesn't already have reviewed=0 (no point
 // stacking another pending entry on top) and only if that same save doesn't also
-// tick "reviewed" itself (reviewed wins over forcing a fresh review). Any other
-// save (metadata-only, or the "reviewed wins" case) just updates the latest row
-// in place.
+// actively tick "reviewed" from 0/none to 1 (reviewed wins over forcing a fresh
+// review). Reviewed already being 1 and simply staying 1 (checkbox untouched)
+// does NOT count as "reviewed wins" - content changing after a record was already
+// reviewed must still reset it to 0 in a fresh entry. Every other save updates the
+// latest row's checkbox values in place instead of inserting - this must happen
+// unconditionally whenever no fresh entry is created, so toggling a checkbox back
+// off is never silently dropped.
 final class AiMetaDataHandlerHook
 {
     private const META_TABLE = 'tx_ailabel_domain_model_meta';
@@ -36,19 +40,27 @@ final class AiMetaDataHandlerHook
         array &$fieldArray,
         DataHandler $dataHandler
     ): void {
+        // Read from the untouched original submission, not from $fieldArray: DataHandler's
+        // compareFieldArrayWithCurrentAndUnset() strips a field whose submitted value is
+        // considered "equal to stored" - and since these 3 fields have no real column to
+        // compare against, unchecking one (submitting 0) gets treated as unchanged and
+        // silently dropped from $fieldArray before this hook ever sees it.
+        $incoming = $dataHandler->datamap[$table][$id] ?? [];
         if (
-            !array_key_exists('ai_created', $fieldArray)
-            && !array_key_exists('ai_modified', $fieldArray)
-            && !array_key_exists('reviewed', $fieldArray)
+            !array_key_exists('ai_created', $incoming)
+            && !array_key_exists('ai_modified', $incoming)
+            && !array_key_exists('reviewed', $incoming)
         ) {
             return;
         }
 
         $this->pendingValues["$table:$id"] = [
-            'ai_created' => (int)($fieldArray['ai_created'] ?? 0),
-            'ai_modified' => (int)($fieldArray['ai_modified'] ?? 0),
-            'reviewed' => (int)($fieldArray['reviewed'] ?? 0),
+            'ai_created' => (int)($incoming['ai_created'] ?? 0),
+            'ai_modified' => (int)($incoming['ai_modified'] ?? 0),
+            'reviewed' => (int)($incoming['reviewed'] ?? 0),
         ];
+        // Still strip them from $fieldArray in case they did survive the compare-and-unset
+        // (e.g. the very first time a value is set to 1) - they have no real column.
         unset($fieldArray['ai_created'], $fieldArray['ai_modified'], $fieldArray['reviewed']);
     }
 
@@ -90,9 +102,6 @@ final class AiMetaDataHandlerHook
 
         $contentChanged = $this->hasRelevantContentChange($table, $fieldArray);
         $aiFlagged = $values['ai_created'] === 1 || $values['ai_modified'] === 1;
-        // If the same save also ticks "reviewed", that wins over forcing a fresh
-        // review: no new history entry, the submitted reviewed=1 is honoured as-is.
-        $reviewedTicked = $values['reviewed'] === 1;
 
         $queryBuilder = $connection->createQueryBuilder();
         $latestRow = $queryBuilder
@@ -106,17 +115,23 @@ final class AiMetaDataHandlerHook
             ->setMaxResults(1)
             ->executeQuery()
             ->fetchAssociative();
+        $latestWasReviewed = $latestRow !== false && (int)$latestRow['reviewed'] === 1;
 
-        // A fresh entry is only needed if there isn't one yet, or the latest one was
-        // already reviewed (reviewed=1) and content just changed again. If the latest
-        // entry is still unreviewed (reviewed=0), it already represents "review
-        // needed" - no point stacking another identical pending entry on top.
+        // "reviewed wins" only applies if the editor actively ticked reviewed in this
+        // very save (0/none -> 1). If it was already 1 and simply stayed 1 because the
+        // checkbox wasn't touched, that's not a decision made in this save and must not
+        // block the reset below - otherwise an already-reviewed record could never be
+        // flagged for re-review again once content changes.
+        $reviewedJustTicked = $values['reviewed'] === 1 && !$latestWasReviewed;
+
         $needsFreshReviewEntry = $contentChanged
             && $aiFlagged
-            && !$reviewedTicked
-            && ($latestRow === false || (int)$latestRow['reviewed'] === 1);
+            && !$reviewedJustTicked
+            && ($latestRow === false || $latestWasReviewed);
 
         if ($needsFreshReviewEntry) {
+            // First entry, or content changed again after having been reviewed:
+            // fresh history entry, review required again.
             $connection->insert(self::META_TABLE, [
                 'pid' => 0,
                 'tablename' => $table,
@@ -131,13 +146,10 @@ final class AiMetaDataHandlerHook
             return;
         }
 
-        if ($contentChanged && $aiFlagged && !$reviewedTicked && $latestRow !== false) {
-            // Latest entry is already pending review (reviewed=0) - leave it as is.
-            return;
-        }
-
-        // Either a metadata-only save (checkboxes only), or content changed but
-        // reviewed was ticked in the same save (reviewed wins): update in place.
+        // Every other case - metadata-only save, reviewed wins, or content changed
+        // but there's already a pending unreviewed entry - syncs the latest row's
+        // checkbox values in place. This must always run: skipping it here would
+        // also silently drop e.g. unchecking ai_created/ai_modified again.
         $data = [
             'ai_created' => $values['ai_created'],
             'ai_modified' => $values['ai_modified'],

@@ -4,45 +4,33 @@ declare(strict_types=1);
 
 namespace B13\AiLabel\Form\FormDataProvider;
 
-use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-// Loads the current ai_created / ai_modified / reviewed state from
-// tx_ailabel_domain_model_meta into the record data, since these fields have
-// no real column on the origin table. The meta table is a history log (see
-// AiMetaDataHandlerHook), so this reads the most recent entry, i.e. the
-// current state. reviewed_by stores the be_users uid that reviewed the record
-// (0 = review required); the "reviewed" checkbox rendered in the form is just
-// the boolean reviewed_by > 0.
+// Decodes ai_created / ai_modified / reviewed from the ai_metadata JSON column into
+// the checkbox fields rendered in the form. ai_metadata is a real column (added via
+// AddAiMetadataColumnToSchema), so DatabaseEditRow already loaded it as part of the
+// row - no separate lookup needed. reviewed_by stores the be_users uid that reviewed
+// the record (0 = review required); "reviewed" is just the boolean reviewed_by > 0.
 final class EnrichAiMetaData implements FormDataProviderInterface
 {
     public function addData(array $result): array
     {
-        $uid = (int)($result['databaseRow']['uid'] ?? 0);
-        if ($uid <= 0 || !isset($result['processedTca']['columns']['ai_created'])) {
+        if (!isset($result['processedTca']['columns']['ai_created'])) {
             return $result;
         }
 
-        $connection = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getConnectionForTable('tx_ailabel_domain_model_meta');
-        $queryBuilder = $connection->createQueryBuilder();
-        $row = $queryBuilder
-            ->select('ai_created', 'ai_modified', 'reviewed_by')
-            ->from('tx_ailabel_domain_model_meta')
-            ->where(
-                $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter($result['tableName'])),
-                $queryBuilder->expr()->eq('uid_foreign', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER))
-            )
-            ->orderBy('uid', 'DESC')
-            ->setMaxResults(1)
-            ->executeQuery()
-            ->fetchAssociative();
+        $metadata = [];
+        $raw = $result['databaseRow']['ai_metadata'] ?? null;
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $metadata = $decoded;
+            }
+        }
 
-        $result['databaseRow']['ai_created'] = (int)($row['ai_created'] ?? 0);
-        $result['databaseRow']['ai_modified'] = (int)($row['ai_modified'] ?? 0);
-        $result['databaseRow']['reviewed'] = (int)($row['reviewed_by'] ?? 0) > 0 ? 1 : 0;
+        $result['databaseRow']['ai_created'] = (int)($metadata['ai_created'] ?? 0);
+        $result['databaseRow']['ai_modified'] = (int)($metadata['ai_modified'] ?? 0);
+        $result['databaseRow']['reviewed'] = (int)($metadata['reviewed_by'] ?? 0) > 0 ? 1 : 0;
 
         return $result;
     }

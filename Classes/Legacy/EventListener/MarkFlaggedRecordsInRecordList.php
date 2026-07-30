@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace B13\AiLabel\Legacy\EventListener;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
-use B13\AiLabel\Legacy\Service\AiMetadataBadgeFactory;
+use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\RecordList\Event\ModifyRecordListRecordActionsEvent;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Attribute\AsEventListener;

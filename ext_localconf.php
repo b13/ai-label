@@ -17,13 +17,6 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['formDataGroup']['tcaDatabaseRe
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][]
     = \B13\AiLabel\Hooks\AiMetaDataHandlerHook::class;
 
-// Renders the "Review required" notice next to the reviewed checkbox.
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1732880000] = [
-    'nodeName' => 'aiLabelReviewRequiredNotice',
-    'priority' => 40,
-    'class' => \B13\AiLabel\Form\Element\ReviewRequiredNotice::class,
-];
-
 // Renders ai_created / ai_modified / reviewed as normal checkboxToggle fields, without
 // TYPO3 auto-creating a real database column for them (that only happens for type=check).
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1732880001] = [

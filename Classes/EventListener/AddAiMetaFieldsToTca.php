@@ -62,27 +62,8 @@ final class AddAiMetaFieldsToTca
                     ],
                 ],
             ];
-            // Pure notice, not persisted - shown next to "reviewed" while it is unset
-            $tca[$tableName]['columns']['ai_review_required_notice'] = [
-                'label' => '',
-                'config' => [
-                    'type' => 'user',
-                    'renderType' => 'aiLabelReviewRequiredNotice',
-                ],
-                'displayCond' => [
-                    'AND' => [
-                        'FIELD:reviewed:=:0',
-                        [
-                            'OR' => [
-                                'FIELD:ai_created:=:1',
-                                'FIELD:ai_modified:=:1',
-                            ],
-                        ],
-                    ],
-                ],
-            ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
-                'showitem' => 'ai_created, ai_modified, --linebreak--, reviewed, ai_review_required_notice',
+                'showitem' => 'ai_created, ai_modified, --linebreak--, reviewed',
             ];
 
             foreach ($tableConfig['types'] ?? [] as $typeKey => $typeConfig) {

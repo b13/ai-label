@@ -90,23 +90,27 @@ final class AiMetaDataHandlerHook
         // The "reviewed" checkbox itself is just a boolean toggle in the form; what's
         // actually persisted is who reviewed it (reviewed_by > 0) or nobody yet (0).
         $reviewedBy = $values['reviewed'] === 1 ? $beUserId : 0;
+        $aiFlagged = $values['ai_created'] === 1 || $values['ai_modified'] === 1;
 
         if ($status === 'new') {
-            $connection->insert(self::META_TABLE, [
-                'pid' => 0,
-                'tablename' => $table,
-                'uid_foreign' => $uid,
-                'ai_created' => $values['ai_created'],
-                'ai_modified' => $values['ai_modified'],
-                'reviewed_by' => $reviewedBy,
-                'tstamp' => $now,
-                'crdate' => $now,
-            ]);
+            // A first entry only ever makes sense for a record that's actually flagged -
+            // no point tracking plain, never-AI-touched records.
+            if ($aiFlagged) {
+                $connection->insert(self::META_TABLE, [
+                    'pid' => 0,
+                    'tablename' => $table,
+                    'uid_foreign' => $uid,
+                    'ai_created' => $values['ai_created'],
+                    'ai_modified' => $values['ai_modified'],
+                    'reviewed_by' => $reviewedBy,
+                    'tstamp' => $now,
+                    'crdate' => $now,
+                ]);
+            }
             return;
         }
 
         $contentChanged = $this->hasRelevantContentChange($table, $fieldArray);
-        $aiFlagged = $values['ai_created'] === 1 || $values['ai_modified'] === 1;
 
         $queryBuilder = $connection->createQueryBuilder();
         $latestRow = $queryBuilder
@@ -163,7 +167,8 @@ final class AiMetaDataHandlerHook
 
         if ($latestRow !== false) {
             $connection->update(self::META_TABLE, $data, ['uid' => (int)$latestRow['uid']]);
-        } else {
+        } elseif ($aiFlagged) {
+            // Same rule as for new records: a first entry only makes sense once flagged.
             $connection->insert(self::META_TABLE, $data + [
                 'pid' => 0,
                 'tablename' => $table,

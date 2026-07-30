@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace B13\AiLabel\Hooks;
 
+use B13\AiLabel\Domain\Model\AiMetadata;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 
@@ -21,6 +22,40 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 // was already reviewed must still reset it.
 final class AiMetaDataHandlerHook
 {
+    /** @var array<string, array{ai_created: bool, ai_modified: bool, reviewed: bool}> */
+    private array $pendingValues = [];
+
+    /**
+     * Runs before DataHandler's own fillInFieldArray()/checkValue()/
+     * compareFieldArrayWithCurrentAndUnset() ever see these fields. That last one
+     * reads $currentRecord[$col] for every submitted field to decide whether it is
+     * unchanged - since these 3 fields have no real column of their own, that access
+     * is an undefined array key, and TYPO3's error handler turns that PHP warning
+     * into a thrown exception, aborting the whole save. Stripping them here, before
+     * they ever reach that code, avoids it entirely.
+     */
+    public function processDatamap_preProcessFieldArray(
+        array &$incomingFieldArray,
+        string $table,
+        int|string $id,
+        DataHandler $dataHandler
+    ): void {
+        if (
+            !array_key_exists('ai_created', $incomingFieldArray)
+            && !array_key_exists('ai_modified', $incomingFieldArray)
+            && !array_key_exists('reviewed', $incomingFieldArray)
+        ) {
+            return;
+        }
+
+        $this->pendingValues["$table:$id"] = [
+            'ai_created' => (bool)($incomingFieldArray['ai_created'] ?? false),
+            'ai_modified' => (bool)($incomingFieldArray['ai_modified'] ?? false),
+            'reviewed' => (bool)($incomingFieldArray['reviewed'] ?? false),
+        ];
+        unset($incomingFieldArray['ai_created'], $incomingFieldArray['ai_modified'], $incomingFieldArray['reviewed']);
+    }
+
     public function processDatamap_postProcessFieldArray(
         string $status,
         string $table,
@@ -28,57 +63,42 @@ final class AiMetaDataHandlerHook
         array &$fieldArray,
         DataHandler $dataHandler
     ): void {
-        // Read from the untouched original submission, not from $fieldArray: DataHandler's
-        // compareFieldArrayWithCurrentAndUnset() strips a field whose submitted value is
-        // considered "equal to stored" - and since these 3 fields have no real column of
-        // their own to compare against, unchecking one (submitting 0) gets treated as
-        // unchanged and silently dropped from $fieldArray before this hook ever sees it.
-        $incoming = $dataHandler->datamap[$table][$id] ?? [];
-        if (
-            !array_key_exists('ai_created', $incoming)
-            && !array_key_exists('ai_modified', $incoming)
-            && !array_key_exists('reviewed', $incoming)
-        ) {
+        $key = "$table:$id";
+        if (!isset($this->pendingValues[$key])) {
             return;
         }
+        $values = $this->pendingValues[$key];
+        unset($this->pendingValues[$key]);
 
-        // They have no real column of their own - never let them reach the SQL query.
-        unset($fieldArray['ai_created'], $fieldArray['ai_modified'], $fieldArray['reviewed']);
+        $aiCreated = $values['ai_created'];
+        $aiModified = $values['ai_modified'];
+        $reviewed = $values['reviewed'];
+        $aiFlagged = $aiCreated || $aiModified;
 
-        $aiCreated = (int)($incoming['ai_created'] ?? 0);
-        $aiModified = (int)($incoming['ai_modified'] ?? 0);
-        $reviewed = (int)($incoming['reviewed'] ?? 0);
-        $aiFlagged = $aiCreated === 1 || $aiModified === 1;
+        $existing = $status === 'update'
+            ? new AiMetadata(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
+            : new AiMetadata(null);
 
-        $existingMetadata = null;
-        if ($status === 'update') {
-            $existingRow = BackendUtility::getRecord($table, (int)$id, 'ai_metadata');
-            $decoded = $existingRow && $existingRow['ai_metadata']
-                ? json_decode((string)$existingRow['ai_metadata'], true)
-                : null;
-            $existingMetadata = is_array($decoded) ? $decoded : null;
-        }
-
-        if (!$aiFlagged && $existingMetadata === null) {
+        if (!$aiFlagged && !$existing->isFlagged() && !$existing->isReviewed()) {
             // Never flagged, and nothing stored yet - nothing to persist.
             return;
         }
 
         $beUserId = (int)($dataHandler->BE_USER->user['uid'] ?? 0);
-        $wasReviewed = (int)($existingMetadata['reviewed_by'] ?? 0) > 0;
-        $reviewedBy = $reviewed === 1 ? $beUserId : 0;
 
         // "reviewed wins" only applies if the editor actively ticked reviewed in this
         // very save (0/none -> 1). If it was already reviewed and simply stayed reviewed
         // because the checkbox wasn't touched, that's not a decision made in this save
         // and must not block the reset below - otherwise an already-reviewed record
         // could never be flagged for re-review again once content changes.
-        $reviewedJustTicked = $reviewed === 1 && !$wasReviewed;
+        $reviewedJustTicked = $reviewed && !$existing->isReviewed();
 
         // Content changing on an already-reviewed, still-flagged record means review
         // is needed again - reset reviewed_by, unless this same save also (re-)ticks it.
         $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
-        $needsReviewReset = $contentChanged && $aiFlagged && $wasReviewed && !$reviewedJustTicked;
+        $needsReviewReset = $contentChanged && $aiFlagged && $existing->isReviewed() && !$reviewedJustTicked;
+
+        $reviewedBy = $needsReviewReset ? 0 : ($reviewed ? $beUserId : 0);
 
         // reviewed_date only moves when reviewed actually flips from unreviewed to
         // reviewed in this save; it's cleared again once a reset makes it unreviewed,
@@ -86,17 +106,17 @@ final class AiMetaDataHandlerHook
         $reviewedDate = match (true) {
             $needsReviewReset => 0,
             $reviewedJustTicked => (int)($GLOBALS['EXEC_TIME'] ?? time()),
-            default => (int)($existingMetadata['reviewed_date'] ?? 0),
+            default => $existing->getReviewedDate(),
         };
 
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
         // column - passing an already-encoded string here would double-encode it.
-        $fieldArray['ai_metadata'] = [
-            'ai_created' => $aiCreated,
-            'ai_modified' => $aiModified,
-            'reviewed_by' => $needsReviewReset ? 0 : $reviewedBy,
-            'reviewed_date' => $reviewedDate,
-        ];
+        $fieldArray['ai_metadata'] = (new AiMetadata(null))
+            ->withAiCreated($aiCreated)
+            ->withAiModified($aiModified)
+            ->withReviewedBy($reviewedBy)
+            ->withReviewedDate($reviewedDate)
+            ->toArray();
     }
 
     /**

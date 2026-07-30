@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+namespace B13\AiLabel\Domain\Model;
+
+// Immutable value object for the ai_metadata JSON column - not an Extbase entity,
+// there is no repository/persistence for this, DataHandler writes the column
+// directly (see AiMetaDataHandlerHook). Decodes once in the constructor so callers
+// don't have to poke at the raw array/JSON themselves.
+final class AiMetadata
+{
+    private bool $aiCreated = false;
+    private bool $aiModified = false;
+    private int $reviewedBy = 0;
+    private int $reviewedDate = 0;
+
+    public function __construct(?string $json)
+    {
+        $decoded = is_string($json) && $json !== '' ? json_decode($json, true) : null;
+        if (!is_array($decoded)) {
+            return;
+        }
+
+        $this->aiCreated = (bool)($decoded['ai_created'] ?? false);
+        $this->aiModified = (bool)($decoded['ai_modified'] ?? false);
+        $this->reviewedBy = (int)($decoded['reviewed_by'] ?? 0);
+        $this->reviewedDate = (int)($decoded['reviewed_date'] ?? 0);
+    }
+
+    public function isAiCreated(): bool
+    {
+        return $this->aiCreated;
+    }
+
+    public function isAiModified(): bool
+    {
+        return $this->aiModified;
+    }
+
+    public function isFlagged(): bool
+    {
+        return $this->aiCreated || $this->aiModified;
+    }
+
+    public function getReviewedBy(): int
+    {
+        return $this->reviewedBy;
+    }
+
+    public function isReviewed(): bool
+    {
+        return $this->reviewedBy > 0;
+    }
+
+    public function getReviewedDate(): int
+    {
+        return $this->reviewedDate;
+    }
+
+    public function withAiCreated(bool $aiCreated): self
+    {
+        $clone = clone $this;
+        $clone->aiCreated = $aiCreated;
+        return $clone;
+    }
+
+    public function withAiModified(bool $aiModified): self
+    {
+        $clone = clone $this;
+        $clone->aiModified = $aiModified;
+        return $clone;
+    }
+
+    public function withReviewedBy(int $reviewedBy): self
+    {
+        $clone = clone $this;
+        $clone->reviewedBy = $reviewedBy;
+        return $clone;
+    }
+
+    public function withReviewedDate(int $reviewedDate): self
+    {
+        $clone = clone $this;
+        $clone->reviewedDate = $reviewedDate;
+        return $clone;
+    }
+
+    /**
+     * The value to assign to DataHandler's $fieldArray['ai_metadata'] - a plain
+     * array, DataHandler/Doctrine encode it themselves for the json column.
+     */
+    public function toArray(): array
+    {
+        return [
+            'ai_created' => (int)$this->aiCreated,
+            'ai_modified' => (int)$this->aiModified,
+            'reviewed_by' => $this->reviewedBy,
+            'reviewed_date' => $this->reviewedDate,
+        ];
+    }
+}

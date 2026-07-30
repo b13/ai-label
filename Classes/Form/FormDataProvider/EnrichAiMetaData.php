@@ -13,7 +13,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 // tx_ailabel_domain_model_meta into the record data, since these fields have
 // no real column on the origin table. The meta table is a history log (see
 // AiMetaDataHandlerHook), so this reads the most recent entry, i.e. the
-// current state.
+// current state. reviewed_by stores the be_users uid that reviewed the record
+// (0 = review required); the "reviewed" checkbox rendered in the form is just
+// the boolean reviewed_by > 0.
 final class EnrichAiMetaData implements FormDataProviderInterface
 {
     public function addData(array $result): array
@@ -27,7 +29,7 @@ final class EnrichAiMetaData implements FormDataProviderInterface
             ->getConnectionForTable('tx_ailabel_domain_model_meta');
         $queryBuilder = $connection->createQueryBuilder();
         $row = $queryBuilder
-            ->select('ai_created', 'ai_modified', 'reviewed')
+            ->select('ai_created', 'ai_modified', 'reviewed_by')
             ->from('tx_ailabel_domain_model_meta')
             ->where(
                 $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter($result['tableName'])),
@@ -40,7 +42,7 @@ final class EnrichAiMetaData implements FormDataProviderInterface
 
         $result['databaseRow']['ai_created'] = (int)($row['ai_created'] ?? 0);
         $result['databaseRow']['ai_modified'] = (int)($row['ai_modified'] ?? 0);
-        $result['databaseRow']['reviewed'] = (int)($row['reviewed'] ?? 0);
+        $result['databaseRow']['reviewed'] = (int)($row['reviewed_by'] ?? 0) > 0 ? 1 : 0;
 
         return $result;
     }

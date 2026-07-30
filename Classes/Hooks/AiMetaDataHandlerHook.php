@@ -14,9 +14,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 // and stores the values in tx_ailabel_domain_model_meta once the real uid of
 // a new record is known.
 //
-// tx_ailabel_domain_model_meta is a history log, not a 1:1 shadow row: as long
-// as a record is flagged ai_created/ai_modified, a save that changes real content
-// appends a fresh row with reviewed reset to 0, so the editor has to review again -
+// tx_ailabel_domain_model_meta is a history log, not a 1:1 shadow row. "reviewed" is
+// a plain boolean checkbox in the form, but persisted as reviewed_by: the be_users uid
+// that reviewed it, or 0 for "review required". As long as a record is flagged
+// ai_created/ai_modified, a save that changes real content appends a fresh row with
+// reviewed_by reset to 0, so the editor has to review again -
 // but only if the latest existing row doesn't already have reviewed=0 (no point
 // stacking another pending entry on top) and only if that same save doesn't also
 // actively tick "reviewed" from 0/none to 1 (reviewed wins over forcing a fresh
@@ -85,6 +87,10 @@ final class AiMetaDataHandlerHook
 
         $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::META_TABLE);
 
+        // The "reviewed" checkbox itself is just a boolean toggle in the form; what's
+        // actually persisted is who reviewed it (reviewed_by > 0) or nobody yet (0).
+        $reviewedBy = $values['reviewed'] === 1 ? $beUserId : 0;
+
         if ($status === 'new') {
             $connection->insert(self::META_TABLE, [
                 'pid' => 0,
@@ -92,8 +98,7 @@ final class AiMetaDataHandlerHook
                 'uid_foreign' => $uid,
                 'ai_created' => $values['ai_created'],
                 'ai_modified' => $values['ai_modified'],
-                'reviewed' => $values['reviewed'],
-                'be_user_id' => $beUserId,
+                'reviewed_by' => $reviewedBy,
                 'tstamp' => $now,
                 'crdate' => $now,
             ]);
@@ -105,7 +110,7 @@ final class AiMetaDataHandlerHook
 
         $queryBuilder = $connection->createQueryBuilder();
         $latestRow = $queryBuilder
-            ->select('uid', 'reviewed')
+            ->select('uid', 'reviewed_by')
             ->from(self::META_TABLE)
             ->where(
                 $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter($table)),
@@ -115,7 +120,7 @@ final class AiMetaDataHandlerHook
             ->setMaxResults(1)
             ->executeQuery()
             ->fetchAssociative();
-        $latestWasReviewed = $latestRow !== false && (int)$latestRow['reviewed'] === 1;
+        $latestWasReviewed = $latestRow !== false && (int)$latestRow['reviewed_by'] > 0;
 
         // "reviewed wins" only applies if the editor actively ticked reviewed in this
         // very save (0/none -> 1). If it was already 1 and simply stayed 1 because the
@@ -131,15 +136,14 @@ final class AiMetaDataHandlerHook
 
         if ($needsFreshReviewEntry) {
             // First entry, or content changed again after having been reviewed:
-            // fresh history entry, review required again.
+            // fresh history entry, review required again (reviewed_by=0).
             $connection->insert(self::META_TABLE, [
                 'pid' => 0,
                 'tablename' => $table,
                 'uid_foreign' => $uid,
                 'ai_created' => $values['ai_created'],
                 'ai_modified' => $values['ai_modified'],
-                'reviewed' => 0,
-                'be_user_id' => $beUserId,
+                'reviewed_by' => 0,
                 'tstamp' => $now,
                 'crdate' => $now,
             ]);
@@ -153,8 +157,7 @@ final class AiMetaDataHandlerHook
         $data = [
             'ai_created' => $values['ai_created'],
             'ai_modified' => $values['ai_modified'],
-            'reviewed' => $values['reviewed'],
-            'be_user_id' => $beUserId,
+            'reviewed_by' => $reviewedBy,
             'tstamp' => $now,
         ];
 

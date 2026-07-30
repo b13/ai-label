@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace B13\AiLabel\Hooks;
 
+use B13\AiLabel\Domain\Model\AiMetadata;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 
@@ -45,40 +46,35 @@ final class AiMetaDataHandlerHook
         // They have no real column of their own - never let them reach the SQL query.
         unset($fieldArray['ai_created'], $fieldArray['ai_modified'], $fieldArray['reviewed']);
 
-        $aiCreated = (int)($incoming['ai_created'] ?? 0);
-        $aiModified = (int)($incoming['ai_modified'] ?? 0);
-        $reviewed = (int)($incoming['reviewed'] ?? 0);
-        $aiFlagged = $aiCreated === 1 || $aiModified === 1;
+        $aiCreated = (bool)($incoming['ai_created'] ?? false);
+        $aiModified = (bool)($incoming['ai_modified'] ?? false);
+        $reviewed = (bool)($incoming['reviewed'] ?? false);
+        $aiFlagged = $aiCreated || $aiModified;
 
-        $existingMetadata = null;
-        if ($status === 'update') {
-            $existingRow = BackendUtility::getRecord($table, (int)$id, 'ai_metadata');
-            $decoded = $existingRow && $existingRow['ai_metadata']
-                ? json_decode((string)$existingRow['ai_metadata'], true)
-                : null;
-            $existingMetadata = is_array($decoded) ? $decoded : null;
-        }
+        $existing = $status === 'update'
+            ? new AiMetadata(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
+            : new AiMetadata(null);
 
-        if (!$aiFlagged && $existingMetadata === null) {
+        if (!$aiFlagged && !$existing->isFlagged() && !$existing->isReviewed()) {
             // Never flagged, and nothing stored yet - nothing to persist.
             return;
         }
 
         $beUserId = (int)($dataHandler->BE_USER->user['uid'] ?? 0);
-        $wasReviewed = (int)($existingMetadata['reviewed_by'] ?? 0) > 0;
-        $reviewedBy = $reviewed === 1 ? $beUserId : 0;
 
         // "reviewed wins" only applies if the editor actively ticked reviewed in this
         // very save (0/none -> 1). If it was already reviewed and simply stayed reviewed
         // because the checkbox wasn't touched, that's not a decision made in this save
         // and must not block the reset below - otherwise an already-reviewed record
         // could never be flagged for re-review again once content changes.
-        $reviewedJustTicked = $reviewed === 1 && !$wasReviewed;
+        $reviewedJustTicked = $reviewed && !$existing->isReviewed();
 
         // Content changing on an already-reviewed, still-flagged record means review
         // is needed again - reset reviewed_by, unless this same save also (re-)ticks it.
         $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
-        $needsReviewReset = $contentChanged && $aiFlagged && $wasReviewed && !$reviewedJustTicked;
+        $needsReviewReset = $contentChanged && $aiFlagged && $existing->isReviewed() && !$reviewedJustTicked;
+
+        $reviewedBy = $needsReviewReset ? 0 : ($reviewed ? $beUserId : 0);
 
         // reviewed_date only moves when reviewed actually flips from unreviewed to
         // reviewed in this save; it's cleared again once a reset makes it unreviewed,
@@ -86,17 +82,17 @@ final class AiMetaDataHandlerHook
         $reviewedDate = match (true) {
             $needsReviewReset => 0,
             $reviewedJustTicked => (int)($GLOBALS['EXEC_TIME'] ?? time()),
-            default => (int)($existingMetadata['reviewed_date'] ?? 0),
+            default => $existing->getReviewedDate(),
         };
 
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
         // column - passing an already-encoded string here would double-encode it.
-        $fieldArray['ai_metadata'] = [
-            'ai_created' => $aiCreated,
-            'ai_modified' => $aiModified,
-            'reviewed_by' => $needsReviewReset ? 0 : $reviewedBy,
-            'reviewed_date' => $reviewedDate,
-        ];
+        $fieldArray['ai_metadata'] = (new AiMetadata(null))
+            ->withAiCreated($aiCreated)
+            ->withAiModified($aiModified)
+            ->withReviewedBy($reviewedBy)
+            ->withReviewedDate($reviewedDate)
+            ->toArray();
     }
 
     /**

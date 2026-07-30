@@ -49,6 +49,6 @@ final class MarkFlaggedRecordsInRecordList
             'returnUrl' => $returnUrl,
         ]);
 
-        $event->setAction($this->badgeFactory->createButtonHtml($metadata, $href), 'ai-label-flag', 'secondary');
+        $event->setAction($this->badgeFactory->createButtonHtml($metadata, $href), 'ai-label-flag', 'primary');
     }
 }

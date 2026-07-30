@@ -9,6 +9,7 @@ use TYPO3\CMS\Backend\Template\Components\Buttons\DropDownButton;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 // TYPO3 v14+ only - ComponentFactory/DropDownButton don't exist on v13.
 // See Classes/Legacy/Service/AiMetadataBadgeFactory.php for the v13 equivalent.
@@ -19,14 +20,19 @@ use TYPO3\CMS\Core\Imaging\IconSize;
 // ai_created/ai_modified and whether it still needs review.
 final class AiMetadataBadgeFactory
 {
-    public function __construct(
-        private readonly ComponentFactory $componentFactory,
-        private readonly IconFactory $iconFactory,
-    ) {
+    public function __construct(private readonly IconFactory $iconFactory)
+    {
+        // ComponentFactory is fetched lazily in createButton() instead of being
+        // constructor-injected: this class is instantiated by both the v14 and
+        // v13 event listeners (Services.yaml autowires the whole Classes/*
+        // directory), and ComponentFactory doesn't exist on v13 - a constructor
+        // type-hint for it would fail container compilation there. Once v13
+        // support is dropped, this can go back to normal constructor injection.
     }
 
     public function createButton(AiMetadata $metadata, string $href): DropDownButton
     {
+        $componentFactory = GeneralUtility::makeInstance(ComponentFactory::class);
         $languageService = $GLOBALS['LANG'];
 
         $flagParts = [];
@@ -38,16 +44,16 @@ final class AiMetadataBadgeFactory
         }
         $flagLabel = implode(', ', $flagParts);
 
-        $dropDown = $this->componentFactory->createDropDownButton()
+        $dropDown = $componentFactory->createDropDownButton()
             ->setLabel($flagLabel)
             ->setTitle($flagLabel)
             ->setIcon($this->iconFactory->getIcon('ai-label-sparkle', IconSize::SMALL));
 
-        $dropDown->addItem($this->componentFactory->createDropDownHeader()->setLabel($flagLabel));
+        $dropDown->addItem($componentFactory->createDropDownHeader()->setLabel($flagLabel));
 
         if ($metadata->isReviewed()) {
             $dropDown->addItem(
-                $this->componentFactory->createDropDownItem()
+                $componentFactory->createDropDownItem()
                     ->setTag('a')
                     ->setHref($href)
                     ->setIcon($this->iconFactory->getIcon('actions-check', IconSize::SMALL))
@@ -58,7 +64,7 @@ final class AiMetadataBadgeFactory
             );
         } else {
             $dropDown->addItem(
-                $this->componentFactory->createDropDownItem()
+                $componentFactory->createDropDownItem()
                     ->setTag('a')
                     ->setHref($href)
                     ->setIcon($this->iconFactory->getIcon('actions-info', IconSize::SMALL))

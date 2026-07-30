@@ -4,7 +4,8 @@
     "description": "Adds AI-created / AI-modified checkboxes to every backend-editable record and stores them in a dedicated table.",
     "license": "GPL-2.0-or-later",
     "require": {
-        "typo3/cms-backend": "^13.4 || ^14.3"
+        "typo3/cms-backend": "^13.4 || ^14.3",
+        "typo3/cms-filelist": "^13.4 || ^14.3"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

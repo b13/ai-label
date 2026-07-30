@@ -18,6 +18,9 @@
             <trans-unit id="notice.reviewRequired">
                 <source>Review required</source>
             </trans-unit>
+            <trans-unit id="recordlist.reviewedOn">
+                <source>Reviewed on %s</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

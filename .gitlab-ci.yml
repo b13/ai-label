@@ -1,0 +1,31 @@
+stages:
+  - lint
+  - test
+
+variables:
+  COMPOSER_CACHE_DIR: ".composer-cache"
+
+code-analysis:php:
+  stage: lint
+  image: composer:2.7
+  before_script:
+    - composer install --no-progress --no-interaction --ignore-platform-reqs
+  script:
+    - if [ -e .Build/bin/phpstan ]; then php -d memory_limit=2G .Build/bin/phpstan analyse -c Build/phpstan.neon; fi
+    - if [ -e .Build/bin/php-cs-fixer ]; then php -d memory_limit=2G .Build/bin/php-cs-fixer fix --config=Build/php-cs-fixer.php -v --dry-run --stop-on-violation --using-cache=no; fi
+
+
+functional_tests:
+  image: ochorocho/typo3-container:v13.3
+  stage: test
+  services:
+    - mysql:8.0
+  variables:
+    MYSQL_ROOT_PASSWORD: "citesting"
+    MYSQL_DATABASE: "citesting"
+  before_script:
+    - echo "TYPO3_CONTEXT=Testing" >> .env
+    - composer install --no-progress --no-interaction
+  script:
+    - export typo3DatabaseName="citesting" && export typo3DatabaseUsername="root" && export typo3DatabasePassword="citesting" && export typo3DatabaseHost="mysql"
+    - php -d memory_limit=2G  .Build/bin/phpunit -c Build/phpunit/FunctionalTests.xml

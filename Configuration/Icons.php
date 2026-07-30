@@ -7,4 +7,8 @@ return [
         'provider' => SvgIconProvider::class,
         'source' => 'EXT:ai_label/Resources/Public/Icons/Module.svg',
     ],
+    'ai-label-sparkle' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:ai_label/Resources/Public/Icons/Sparkle.svg',
+    ],
 ];

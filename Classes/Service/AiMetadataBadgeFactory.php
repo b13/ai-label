@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace B13\AiLabel\Service;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
+use TYPO3\CMS\Backend\Template\Components\Buttons\DropDownButton;
 use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
-use TYPO3\CMS\Backend\Template\Components\Buttons\LinkButton;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 
 // Builds the small action-column marker shared by the record list and file list
-// event listeners - a checkmark once reviewed, an info icon while review is
-// still required, both linking straight to the record's edit form.
+// event listeners: a single "AI" sparkle icon that opens a native Bootstrap
+// dropdown (data-bs-toggle, no custom JS) showing whether the record is
+// ai_created/ai_modified and whether it still needs review.
 final class AiMetadataBadgeFactory
 {
     public function __construct(
@@ -21,36 +22,47 @@ final class AiMetadataBadgeFactory
     ) {
     }
 
-    public function createButton(AiMetadata $metadata, string $href): LinkButton
-    {
-        return $this->componentFactory->createLinkButton()
-            ->setHref($href)
-            ->setIcon($this->iconFactory->getIcon(
-                $metadata->isReviewed() ? 'actions-check' : 'actions-info',
-                IconSize::SMALL
-            ))
-            ->setTitle($this->buildTitle($metadata));
-    }
-
-    private function buildTitle(AiMetadata $metadata): string
+    public function createButton(AiMetadata $metadata, string $href): DropDownButton
     {
         $languageService = $GLOBALS['LANG'];
 
-        $parts = [];
+        $flagParts = [];
         if ($metadata->isAiCreated()) {
-            $parts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_created');
+            $flagParts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_created');
         }
         if ($metadata->isAiModified()) {
-            $parts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_modified');
+            $flagParts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_modified');
+        }
+        $flagLabel = implode(', ', $flagParts);
+
+        $dropDown = $this->componentFactory->createDropDownButton()
+            ->setLabel($flagLabel)
+            ->setTitle($flagLabel)
+            ->setIcon($this->iconFactory->getIcon('ai-label-sparkle', IconSize::SMALL));
+
+        $dropDown->addItem($this->componentFactory->createDropDownHeader()->setLabel($flagLabel));
+
+        if ($metadata->isReviewed()) {
+            $dropDown->addItem(
+                $this->componentFactory->createDropDownItem()
+                    ->setTag('a')
+                    ->setHref($href)
+                    ->setIcon($this->iconFactory->getIcon('actions-check', IconSize::SMALL))
+                    ->setLabel(sprintf(
+                        $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:recordlist.reviewedOn'),
+                        date('d.m.Y', $metadata->getReviewedDate())
+                    ))
+            );
+        } else {
+            $dropDown->addItem(
+                $this->componentFactory->createDropDownItem()
+                    ->setTag('a')
+                    ->setHref($href)
+                    ->setIcon($this->iconFactory->getIcon('actions-info', IconSize::SMALL))
+                    ->setLabel($languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:notice.reviewRequired'))
+            );
         }
 
-        $status = $metadata->isReviewed()
-            ? sprintf(
-                $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:recordlist.reviewedOn'),
-                date('d.m.Y', $metadata->getReviewedDate())
-            )
-            : $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:notice.reviewRequired');
-
-        return implode(', ', $parts) . ' - ' . $status;
+        return $dropDown;
     }
 }

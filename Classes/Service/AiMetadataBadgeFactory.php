@@ -10,6 +10,9 @@ use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 
+// TYPO3 v14+ only - ComponentFactory/DropDownButton don't exist on v13.
+// See Classes/Legacy/Service/AiMetadataBadgeFactory.php for the v13 equivalent.
+//
 // Builds the small action-column marker shared by the record list and file list
 // event listeners: a single "AI" sparkle icon that opens a native Bootstrap
 // dropdown (data-bs-toggle, no custom JS) showing whether the record is

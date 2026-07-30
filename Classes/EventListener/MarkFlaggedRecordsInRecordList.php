@@ -10,7 +10,14 @@ use TYPO3\CMS\Backend\RecordList\Event\ModifyRecordListRecordActionsEvent;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ActionGroup;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
+use TYPO3\CMS\Core\Information\Typo3Version;
 
+// TYPO3 v14+ only - ModifyRecordListRecordActionsEvent::setAction() requires a
+// ComponentInterface here, which only exists on v14. See
+// Classes/Legacy/EventListener/MarkFlaggedRecordsInRecordList.php for v13
+// (same event class, different constructor/methods depending on the running
+// TYPO3 version - the early return below is the only thing telling them apart).
+//
 // Marks ai_created/ai_modified records in the Web > List module's action column,
 // the same place edit/copy/delete live - similar to how the localize-metadata
 // button appears in the file list.
@@ -20,11 +27,16 @@ final class MarkFlaggedRecordsInRecordList
     public function __construct(
         private readonly AiMetadataBadgeFactory $badgeFactory,
         private readonly UriBuilder $uriBuilder,
+        private readonly Typo3Version $typo3Version,
     ) {
     }
 
     public function __invoke(ModifyRecordListRecordActionsEvent $event): void
     {
+        if ($this->typo3Version->getMajorVersion() < 14) {
+            return;
+        }
+
         $record = $event->getRecord();
         // RecordFactory::createResolvedRecordFromDatabaseRow() filters toArray()
         // against the TCA schema, dropping ai_metadata since it's schema-only and

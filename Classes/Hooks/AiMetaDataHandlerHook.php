@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace B13\AiLabel\Hooks;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 
 // Folds ai_created / ai_modified / reviewed into the ai_metadata JSON column (schema
@@ -20,10 +22,15 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 // forcing a reset). Reviewed already being set and simply staying set (checkbox
 // untouched) does NOT count as "reviewed wins" - content changing after a record
 // was already reviewed must still reset it.
+#[Autoconfigure(public: true)]
 final class AiMetaDataHandlerHook
 {
     /** @var array<string, array{ai_created: bool, ai_modified: bool, reviewed: bool}> */
     private array $pendingValues = [];
+
+    public function __construct(private readonly Context $context)
+    {
+    }
 
     /**
      * Runs before DataHandler's own fillInFieldArray()/checkValue()/
@@ -114,7 +121,7 @@ final class AiMetaDataHandlerHook
         // and otherwise just keeps whatever was stored before.
         $reviewedDate = match (true) {
             $needsReviewReset => 0,
-            $reviewedJustTicked => (int)($GLOBALS['EXEC_TIME'] ?? time()),
+            $reviewedJustTicked => (int)$this->context->getPropertyFromAspect('date', 'timestamp'),
             default => $existing->getReviewedDate(),
         };
 

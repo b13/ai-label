@@ -6,6 +6,7 @@ namespace B13\AiLabel\Legacy\EventListener;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Information\Typo3Version;
@@ -48,7 +49,7 @@ final class MarkFlaggedFilesInFileList
         }
 
         // v13's event carries no request; fall back to the global one.
-        $returnUrl = (string)($GLOBALS['TYPO3_REQUEST']?->getUri() ?? '');
+        $returnUrl = (string)($this->getCurrentRequest()?->getUri() ?? '');
         $href = (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
             'edit' => ['sys_file_metadata' => [(int)$metaDataRow['uid'] => 'edit']],
             'returnUrl' => $returnUrl,
@@ -57,5 +58,10 @@ final class MarkFlaggedFilesInFileList
         $actionItems = $event->getActionItems();
         $actionItems['ai-label-flag'] = $this->badgeFactory->createButtonHtml($metadata, $href);
         $event->setActionItems($actionItems);
+    }
+
+    protected function getCurrentRequest(): ?ServerRequestInterface
+    {
+        return $GLOBALS['TYPO3_REQUEST'] ?? null;
     }
 }

@@ -6,6 +6,7 @@ namespace B13\AiLabel\Legacy\EventListener;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\RecordList\Event\ModifyRecordListRecordActionsEvent;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
@@ -43,12 +44,17 @@ final class MarkFlaggedRecordsInRecordList
         }
 
         // v13's event carries no request; fall back to the global one.
-        $returnUrl = (string)($GLOBALS['TYPO3_REQUEST']?->getUri() ?? '');
+        $returnUrl = (string)($this->getCurrentRequest()?->getUri() ?? '');
         $href = (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
             'edit' => [$event->getTable() => [(int)$row['uid'] => 'edit']],
             'returnUrl' => $returnUrl,
         ]);
 
         $event->setAction($this->badgeFactory->createButtonHtml($metadata, $href), 'ai-label-flag', 'primary');
+    }
+
+    protected function getCurrentRequest(): ?ServerRequestInterface
+    {
+        return $GLOBALS['TYPO3_REQUEST'] ?? null;
     }
 }

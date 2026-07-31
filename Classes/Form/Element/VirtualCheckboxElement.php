@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace B13\AiLabel\Form\Element;
 
-use B13\AiLabel\Domain\Factory\ReviewInformationFactory;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\Form\Element\CheckboxToggleElement;
-
 
 // TCA type=user delegating to core's checkboxToggle rendering. DefaultTcaSchema only
 // auto-creates a database column for TCA type=check fields, never for type=user -
@@ -17,9 +15,9 @@ use TYPO3\CMS\Backend\Form\Element\CheckboxToggleElement;
 // $this->nodeFactory is inherited from AbstractFormElement (injectNodeFactory()).
 final class VirtualCheckboxElement extends CheckboxToggleElement
 {
-
     public function __construct(private readonly AiMetadataBadgeFactory $badgeFactory)
-    {}
+    {
+    }
 
     protected function wrapWithFieldsetAndLegend(string $innerHTML): string
     {
@@ -39,9 +37,8 @@ final class VirtualCheckboxElement extends CheckboxToggleElement
             $html[] =     $this->badgeFactory->getBadge($aiMetadata);
             $html[] =     $innerHTML;
             $html[] = '</fieldset>';
-            return implode(LF, $html);
-        } else {
-            return parent::wrapWithFieldsetAndLegend($innerHTML);
+            return implode(chr(10), $html);
         }
+        return parent::wrapWithFieldsetAndLegend($innerHTML);
     }
 }

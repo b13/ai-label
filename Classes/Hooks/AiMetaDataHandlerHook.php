@@ -103,8 +103,9 @@ final class AiMetaDataHandlerHook
 
         // Content changing on an already-reviewed, still-flagged record means review
         // is needed again - reset reviewed_by, unless this same save also (re-)ticks it.
+        // $aiFlagged is already guaranteed true here (see the early return above).
         $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
-        $needsReviewReset = $contentChanged && $aiFlagged && $existing->isReviewed() && !$reviewedJustTicked;
+        $needsReviewReset = $contentChanged && $existing->isReviewed() && !$reviewedJustTicked;
 
         $reviewedBy = $needsReviewReset ? 0 : ($reviewed ? $beUserId : 0);
 

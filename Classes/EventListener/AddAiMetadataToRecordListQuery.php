@@ -33,7 +33,7 @@ final class AddAiMetadataToRecordListQuery
 
     public function __invoke(ModifyDatabaseQueryForRecordListingEvent $event): void
     {
-        if (!in_array($event->getTable(), $this->applicableTablesProvider->getApplicableTables(), true)) {
+        if (!$this->applicableTablesProvider->isTableApplicable($event->getTable())) {
             return;
         }
 

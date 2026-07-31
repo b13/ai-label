@@ -33,4 +33,9 @@ final class ApplicableTablesProvider
         $this->eventDispatcher->dispatch($applicableTablesEvent);
         return $applicableTablesEvent->getApplicableTables();
     }
+
+    public function isTableApplicable(string $table): bool
+    {
+        return in_array($table, $this->getApplicableTables(), true);
+    }
 }

@@ -66,7 +66,7 @@ final class AiMetadataRecordFinder
      */
     public function findFlaggedContentElementsOnPage(int $pageId): array
     {
-        if (!in_array('tt_content', $this->applicableTablesProvider->getApplicableTables(), true)) {
+        if (!$this->applicableTablesProvider->isTableApplicable('tt_content')) {
             return [];
         }
 

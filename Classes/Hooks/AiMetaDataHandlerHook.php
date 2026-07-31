@@ -13,6 +13,7 @@ namespace B13\AiLabel\Hooks;
  */
 
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Service\AiLabelApi;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
@@ -33,6 +34,12 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 // forcing a reset). Reviewed already being set and simply staying set (checkbox
 // untouched) does NOT count as "reviewed wins" - content changing after a record
 // was already reviewed must still reset it.
+//
+// For updates to an existing record, the actual persisting goes through
+// AiLabelApi::aiMetadataUpdate() instead of writing $fieldArray directly - see
+// that class for why (permissions, sys_history). New records can't go through it
+// (the row doesn't exist yet at this point, see below), so that one case still
+// writes $fieldArray directly, unchanged from before.
 #[Autoconfigure(public: true)]
 final class AiMetaDataHandlerHook
 {
@@ -46,6 +53,7 @@ final class AiMetaDataHandlerHook
     public function __construct(
         private readonly Context $context,
         private readonly TcaSchemaFactory $tcaSchemaFactory,
+        private readonly AiLabelApi $aiLabelApi,
     ) {
     }
 
@@ -103,10 +111,15 @@ final class AiMetaDataHandlerHook
         }
 
         if (!$pendingAiMetadata->isFlagged()) {
-            // Unflagged now: nothing worth tracking anymore. NULL the column
-            // (instead of storing all-zero JSON) so AiMetadataRecordFinder's
-            // "WHERE ai_metadata IS NOT NULL" stays an accurate filter on its own.
-            $fieldArray['ai_metadata'] = null;
+            // Unflagged now: nothing worth tracking anymore.
+            if ($status === 'update') {
+                $this->aiLabelApi->aiMetadataUpdate($table, (int)$id, null, $dataHandler->BE_USER);
+            } else {
+                // New records: see the class docblock - AiLabelApi can't target a row
+                // that doesn't exist yet, so this one case still writes $fieldArray
+                // directly, same as before.
+                $fieldArray['ai_metadata'] = null;
+            }
             return;
         }
 
@@ -136,14 +149,20 @@ final class AiMetaDataHandlerHook
             default => $existingAiMetadata->getReviewedTimestamp(),
         };
 
-        // DataHandler/Doctrine already JSON-encode values written to a json-typed
-        // column - passing an already-encoded string here would double-encode it.
-        $fieldArray['ai_metadata'] = (new AiMetadata())
+        $finalAiMetadata = (new AiMetadata())
             ->withAiCreated($pendingAiMetadata->isAiCreated())
             ->withAiModified($pendingAiMetadata->isAiModified())
             ->withReviewedBy($reviewedBy)
-            ->withReviewedTimestamp($reviewedTimestamp)
-            ->toArray();
+            ->withReviewedTimestamp($reviewedTimestamp);
+
+        if ($status === 'update') {
+            $this->aiLabelApi->aiMetadataUpdate($table, (int)$id, $finalAiMetadata, $dataHandler->BE_USER);
+        } else {
+            // New records: see the class docblock. DataHandler/Doctrine already
+            // JSON-encode values written to a json-typed column - passing an
+            // already-encoded string here would double-encode it.
+            $fieldArray['ai_metadata'] = $finalAiMetadata->toArray();
+        }
     }
 
     /**

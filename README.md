@@ -26,6 +26,72 @@ overview module listing every flagged record.
 - Backend module "AI Label" (Web menu) lists every currently flagged record,
   workspace-aware.
 
+## Public API for other extensions
+
+Other extensions that generate or edit content with AI (e.g. an AI text/image
+generator) can flag a record directly, without going through the backend form,
+via `B13\AiLabel\Service\AiLabelApi` (constructor-inject it like any other
+service):
+
+```php
+final class AiLabelApi
+{
+    public function aiCreated(string $table, int $uid, ?BackendUserAuthentication $user = null): void;
+    public function aiModified(string $table, int $uid, ?BackendUserAuthentication $user = null): void;
+    public function aiRemoved(string $table, int $uid, ?BackendUserAuthentication $user = null): void;
+    public function aiMetadataUpdate(string $table, int $uid, ?AiMetadata $aiMetadata, ?BackendUserAuthentication $user = null): void;
+}
+```
+
+```php
+$this->aiLabelApi->aiCreated('tt_content', 123);
+$this->aiLabelApi->aiModified('tt_content', 123, $someSpecificBackendUser);
+$this->aiLabelApi->aiRemoved('tt_content', 123);
+```
+
+What this does for you:
+
+- **Writes through a real `DataHandler` run**, not a raw query - the same
+  permission checks apply as for any other backend edit (page/table access for
+  the given backend user), and the change shows up in that record's history
+  (`sys_history`) like a normal edit would.
+- **`$user` defaults to `$GLOBALS['BE_USER']`** if not given; if neither is
+  available, it throws `\RuntimeException`.
+- **`aiCreated()`/`aiModified()` always reset the review state** (`reviewed_by`/
+  `reviewedTimestamp` back to "needs review") - every call means the content was
+  just (re-)touched by AI, regardless of whether it was reviewed before.
+- **`aiRemoved()` clears the flag entirely** - not just `aiCreated`/`aiModified`
+  set back to false.
+- **Throws `\InvalidArgumentException`** if `$table` isn't one of the applicable
+  tables (see below) - this API never silently writes `ai_metadata` onto a table
+  that was never set up to carry it.
+
+`aiMetadataUpdate()` is the lower-level method the three convenience methods
+above are built on; use it directly if you've already computed the full
+`AiMetadata` state yourself. `$aiMetadata = null` clears the column, same as
+`aiRemoved()`.
+
+### Registering your own tables
+
+By default, `tt_content`, `pages` and `sys_file_metadata` are applicable (get
+the `ai_created`/`ai_modified`/`reviewed` fields, the `ai_metadata` column, and
+can be used with `AiLabelApi`). To add your own table, listen to
+`B13\AiLabel\Event\ApplicableTablesEvent`:
+
+```php
+#[AsEventListener]
+final class RegisterMyTableForAiLabel
+{
+    public function __invoke(ApplicableTablesEvent $event): void
+    {
+        $event->addApplicableTable('tx_myextension_domain_model_something');
+    }
+}
+```
+
+(`removeApplicableTable()` is available too, if you need to opt a default
+table back out.)
+
 ## Frontend integration
 
 This extension does **not** render anything in the frontend by itself - no

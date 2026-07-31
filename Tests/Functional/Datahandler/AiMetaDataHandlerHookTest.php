@@ -13,6 +13,7 @@ namespace B13\AiLabel\Tests\Functional\Datahandler;
  */
 
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Database\Connection;
 
 class AiMetaDataHandlerHookTest extends AbstractDatahandler
 {
@@ -169,5 +170,41 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $this->dataHandler->start($data, [], $this->backendUser);
         $this->dataHandler->process_datamap();
         self::assertCSVDataSet(__DIR__ . '/Fixtures/AiMetaDataHandlerHook/ContentChangeOnAlreadyPendingRecordStaysPendingResult.csv');
+    }
+
+    // Whole point of routing updates through AiLabelApi::aiMetadataUpdate() instead
+    // of writing $fieldArray directly: compareFieldArrayWithCurrentAndUnset() (the
+    // method that decides what gets logged) only ever sees the change this way -
+    // this verifies a real sys_history entry actually shows up, not just that the
+    // final ai_metadata value ends up correct.
+    #[Test]
+    public function updatingAnExistingRecordWritesToSysHistory(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/AiMetaDataHandlerHook/FlaggedAndUnreviewedRecord.csv');
+        $data = [
+            'tt_content' => [
+                1 => [
+                    'ai_created' => 1,
+                    'ai_modified' => 0,
+                    'reviewed' => 1,
+                ],
+            ],
+        ];
+        $this->dataHandler->start($data, [], $this->backendUser);
+        $this->dataHandler->process_datamap();
+
+        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('sys_history');
+        $historyEntries = $queryBuilder
+            ->select('history_data')
+            ->from('sys_history')
+            ->where(
+                $queryBuilder->expr()->eq('tablename', $queryBuilder->createNamedParameter('tt_content')),
+                $queryBuilder->expr()->eq('recuid', $queryBuilder->createNamedParameter(1, Connection::PARAM_INT))
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        self::assertNotEmpty($historyEntries, 'Expected at least one sys_history entry for tt_content:1');
+        self::assertStringContainsString('ai_metadata', $historyEntries[0]['history_data']);
     }
 }

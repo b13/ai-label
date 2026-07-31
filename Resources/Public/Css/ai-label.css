@@ -14,3 +14,12 @@
 #b13_loves_typo3 a:hover {
     background-color: rgb(170,58,80);
 }
+
+/* Badge relocated by main.js from the content preview into the t3-page-ce-header-right
+   button group - that group is built for small icon buttons, so give the badge a
+   little breathing room instead of sitting flush against them. */
+.t3-page-ce-header-right .ai-label-marker {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+}

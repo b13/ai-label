@@ -25,9 +25,10 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 
-// Collects every record across the applicable tables whose ai_metadata marks it
-// as ai_created or ai_modified. Not an Extbase repository, no persistence layer
-// in use here - just a plain query helper for the overview module.
+// Collects records across the applicable tables whose ai_metadata marks them as
+// ai_created or ai_modified. Not an Extbase repository, no persistence layer in
+// use here - just a plain query helper, used by the overview module (site-wide)
+// and MarkFlaggedPageInLayoutModule (single page, tt_content only).
 //
 // Workspace-aware: only ever shows what the current backend user would actually
 // see for their active workspace - the live version (or its workspace-overlaid
@@ -49,38 +50,62 @@ final class AiMetadataRecordFinder
     /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, reviewBadge: string}> */
     public function findFlaggedRecords(): array
     {
+        $records = [];
+        foreach ($this->applicableTablesProvider->getApplicableTables() as $table) {
+            $records = array_merge($records, $this->findFlaggedRecordsForTable($table, null));
+        }
+
+        return $records;
+    }
+
+    /**
+     * Only tt_content, only on this one page - used to fold "review required"/
+     * "reviewed by X on Y" badges into the Page module's content element headers.
+     *
+     * @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, reviewBadge: string}>
+     */
+    public function findFlaggedContentElementsOnPage(int $pageId): array
+    {
+        if (!in_array('tt_content', $this->applicableTablesProvider->getApplicableTables(), true)) {
+            return [];
+        }
+
+        return $this->findFlaggedRecordsForTable('tt_content', $pageId);
+    }
+
+    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, reviewBadge: string}> */
+    private function findFlaggedRecordsForTable(string $table, ?int $pid): array
+    {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id');
+        $isVersionable = $this->tcaSchemaFactory->has($table)
+            && $this->tcaSchemaFactory->get($table)->hasCapability(TcaSchemaCapability::Workspace);
+
         $records = [];
 
-        foreach ($this->applicableTablesProvider->getApplicableTables() as $table) {
-            $isVersionable = $this->tcaSchemaFactory->has($table)
-                && $this->tcaSchemaFactory->get($table)->hasCapability(TcaSchemaCapability::Workspace);
-
-            foreach ($this->findLiveRows($table, $isVersionable) as $row) {
-                if ($isVersionable && $workspaceId > 0) {
-                    BackendUtility::workspaceOL($table, $row, $workspaceId);
-                    if ($row === false) {
-                        // Moved away in this workspace - see workspaceOL()'s $unsetMovePointers.
-                        continue;
-                    }
-                    if (VersionState::tryFrom($row['t3ver_state'] ?? 0) === VersionState::DELETE_PLACEHOLDER) {
-                        // Deleted in this workspace - would disappear on publish, don't list it.
-                        continue;
-                    }
+        foreach ($this->findLiveRows($table, $pid, $isVersionable) as $row) {
+            if ($isVersionable && $workspaceId > 0) {
+                BackendUtility::workspaceOL($table, $row, $workspaceId);
+                if ($row === false) {
+                    // Moved away in this workspace - see workspaceOL()'s $unsetMovePointers.
+                    continue;
                 }
-
-                $record = $this->buildRecord($table, $row);
-                if ($record !== null) {
-                    $records[] = $record;
+                if (VersionState::tryFrom($row['t3ver_state'] ?? 0) === VersionState::DELETE_PLACEHOLDER) {
+                    // Deleted in this workspace - would disappear on publish, don't list it.
+                    continue;
                 }
             }
 
-            if ($isVersionable && $workspaceId > 0) {
-                foreach ($this->findNewInWorkspace($table, $workspaceId) as $row) {
-                    $record = $this->buildRecord($table, $row);
-                    if ($record !== null) {
-                        $records[] = $record;
-                    }
+            $record = $this->buildRecord($table, $row);
+            if ($record !== null) {
+                $records[] = $record;
+            }
+        }
+
+        if ($isVersionable && $workspaceId > 0) {
+            foreach ($this->findNewInWorkspace($table, $pid, $workspaceId) as $row) {
+                $record = $this->buildRecord($table, $row);
+                if ($record !== null) {
+                    $records[] = $record;
                 }
             }
         }
@@ -89,7 +114,7 @@ final class AiMetadataRecordFinder
     }
 
     /** @return list<array<string, mixed>> */
-    private function findLiveRows(string $table, bool $isVersionable): array
+    private function findLiveRows(string $table, ?int $pid, bool $isVersionable): array
     {
         $queryBuilder = $this->connectionPool->getConnectionForTable($table)->createQueryBuilder();
         $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
@@ -98,9 +123,13 @@ final class AiMetadataRecordFinder
             ->from($table)
             ->where($queryBuilder->expr()->isNotNull('ai_metadata'));
 
+        if ($pid !== null) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pid, Connection::PARAM_INT)));
+        }
+
         if ($isVersionable) {
             // Only the live records here - workspace drafts of them are added back in
-            // via workspaceOL() in findFlaggedRecords(), scoped to the current workspace.
+            // via workspaceOL() in findFlaggedRecordsForTable(), scoped to the current workspace.
             $queryBuilder->andWhere($queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)));
         }
 
@@ -113,20 +142,23 @@ final class AiMetadataRecordFinder
      *
      * @return list<array<string, mixed>>
      */
-    private function findNewInWorkspace(string $table, int $workspaceId): array
+    private function findNewInWorkspace(string $table, ?int $pid, int $workspaceId): array
     {
         $queryBuilder = $this->connectionPool->getConnectionForTable($table)->createQueryBuilder();
-
-        return $queryBuilder
+        $queryBuilder
             ->select('*')
             ->from($table)
             ->where(
                 $queryBuilder->expr()->isNotNull('ai_metadata'),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_state', $queryBuilder->createNamedParameter(VersionState::NEW_PLACEHOLDER->value, Connection::PARAM_INT))
-            )
-            ->executeQuery()
-            ->fetchAllAssociative();
+            );
+
+        if ($pid !== null) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pid, Connection::PARAM_INT)));
+        }
+
+        return $queryBuilder->executeQuery()->fetchAllAssociative();
     }
 
     /** @param array<string, mixed> $row */

@@ -48,7 +48,7 @@
                             <td>
                                 <f:if condition="{record.metadata.reviewed}">
                                     <f:then>
-                                        <f:format.date format="d.m.Y H:i">@{record.metadata.reviewedDate}</f:format.date>
+                                        <f:format.date format="d.m.Y H:i">@{record.metadata.reviewedTimestamp}</f:format.date>
                                     </f:then>
                                     <f:else>
                                         <span class="badge badge-warning">

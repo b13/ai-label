@@ -13,7 +13,7 @@ final class AiMetadata
     private bool $aiCreated = false;
     private bool $aiModified = false;
     private int $reviewedBy = 0;
-    private int $reviewedDate = 0;
+    private int $reviewedTimestamp = 0;
 
     public function __construct(?string $json)
     {
@@ -25,7 +25,7 @@ final class AiMetadata
         $this->aiCreated = (bool)($decoded['ai_created'] ?? false);
         $this->aiModified = (bool)($decoded['ai_modified'] ?? false);
         $this->reviewedBy = (int)($decoded['reviewed_by'] ?? 0);
-        $this->reviewedDate = (int)($decoded['reviewed_date'] ?? 0);
+        $this->reviewedTimestamp = (int)($decoded['reviewed_timestamp'] ?? 0);
     }
 
     public function isAiCreated(): bool
@@ -53,9 +53,9 @@ final class AiMetadata
         return $this->reviewedBy > 0;
     }
 
-    public function getReviewedDate(): int
+    public function getReviewedTimestamp(): int
     {
-        return $this->reviewedDate;
+        return $this->reviewedTimestamp;
     }
 
     public function withAiCreated(bool $aiCreated): self
@@ -79,10 +79,10 @@ final class AiMetadata
         return $clone;
     }
 
-    public function withReviewedDate(int $reviewedDate): self
+    public function withReviewedTimestamp(int $reviewedTimestamp): self
     {
         $clone = clone $this;
-        $clone->reviewedDate = $reviewedDate;
+        $clone->reviewedTimestamp = $reviewedTimestamp;
         return $clone;
     }
 
@@ -96,7 +96,7 @@ final class AiMetadata
             'ai_created' => (int)$this->aiCreated,
             'ai_modified' => (int)$this->aiModified,
             'reviewed_by' => $this->reviewedBy,
-            'reviewed_date' => $this->reviewedDate,
+            'reviewed_timestamp' => $this->reviewedTimestamp,
         ];
     }
 }

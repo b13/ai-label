@@ -38,7 +38,7 @@ abstract class AbstractDatahandler extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Fixed "now" so tstamp/crdate and the hook's reviewed_date are deterministic.
+        // Fixed "now" so tstamp/crdate and the hook's reviewed_timestamp are deterministic.
         $GLOBALS['EXEC_TIME'] = 1440000000;
         $this->importCSVDataSet(__DIR__ . '/Fixtures/be_users.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/pages.csv');

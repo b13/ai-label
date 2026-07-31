@@ -116,13 +116,13 @@ final class AiMetaDataHandlerHook
 
         $reviewedBy = $needsReviewReset ? 0 : ($reviewed ? $beUserId : 0);
 
-        // reviewed_date only moves when reviewed actually flips from unreviewed to
-        // reviewed in this save; it's cleared again once a reset makes it unreviewed,
-        // and otherwise just keeps whatever was stored before.
-        $reviewedDate = match (true) {
+        // reviewed_timestamp only moves when reviewed actually flips from unreviewed
+        // to reviewed in this save; it's cleared again once a reset makes it
+        // unreviewed, and otherwise just keeps whatever was stored before.
+        $reviewedTimestamp = match (true) {
             $needsReviewReset => 0,
             $reviewedJustTicked => (int)$this->context->getPropertyFromAspect('date', 'timestamp'),
-            default => $existing->getReviewedDate(),
+            default => $existing->getReviewedTimestamp(),
         };
 
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
@@ -131,7 +131,7 @@ final class AiMetaDataHandlerHook
             ->withAiCreated($aiCreated)
             ->withAiModified($aiModified)
             ->withReviewedBy($reviewedBy)
-            ->withReviewedDate($reviewedDate)
+            ->withReviewedTimestamp($reviewedTimestamp)
             ->toArray();
     }
 

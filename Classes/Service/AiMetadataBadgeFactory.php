@@ -62,7 +62,7 @@ final class AiMetadataBadgeFactory
                     ->setIcon($this->iconFactory->getIcon('actions-check', IconSize::SMALL))
                     ->setLabel(sprintf(
                         $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:recordlist.reviewedOn'),
-                        date('d.m.Y', $metadata->getReviewedDate())
+                        date('d.m.Y', $metadata->getReviewedTimestamp())
                     ))
             );
         } else {
@@ -96,7 +96,7 @@ final class AiMetadataBadgeFactory
             $statusIcon = $this->iconFactory->getIcon('actions-check', IconSize::SMALL)->render();
             $statusLabel = sprintf(
                 $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:recordlist.reviewedOn'),
-                date('d.m.Y', $metadata->getReviewedDate())
+                date('d.m.Y', $metadata->getReviewedTimestamp())
             );
         } else {
             $statusIcon = $this->iconFactory->getIcon('actions-info', IconSize::SMALL)->render();
@@ -120,7 +120,7 @@ final class AiMetadataBadgeFactory
         if ($aiMetadata->isReviewed()) {
             $reviewedBy = $aiMetadata->getReviewedBy();
             $beUser = BackendUtility::getRecord('be_users', $reviewedBy);
-            $reviewedDate = $aiMetadata->getReviewedDate();
+            $reviewedTimestamp = $aiMetadata->getReviewedTimestamp();
             $html = [];
             $html[] = htmlspecialchars(
                 $this->getLanguageService()->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:notice.reviewed.1')
@@ -133,7 +133,7 @@ final class AiMetadataBadgeFactory
             $html[] = htmlspecialchars(
                 $this->getLanguageService()->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:notice.reviewed.2')
             );
-            $html[] = $reviewedDate;
+            $html[] = $reviewedTimestamp;
             $label = '<span class="badge badge-info">' . implode(' ', $html) . '</span>';
         } else {
             $label = htmlspecialchars(

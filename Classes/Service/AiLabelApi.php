@@ -55,12 +55,22 @@ final class AiLabelApi
 
     public function aiCreated(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
-        $this->applyFlag($table, $uid, static fn (AiMetadata $existing): AiMetadata => $existing->withAiCreated(true), $user);
+        $existing = $this->fetchExisting($table, $uid);
+        // Any explicit aiCreated()/aiModified() call means the content was just
+        // (re-)touched by AI - always needs a fresh review, regardless of whether
+        // it was reviewed before.
+        $updated = $existing->withAiCreated(true)->withReviewedBy(0)->withReviewedTimestamp(0);
+        $this->aiMetadataUpdate($table, $uid, $updated, $user);
     }
 
     public function aiModified(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
-        $this->applyFlag($table, $uid, static fn (AiMetadata $existing): AiMetadata => $existing->withAiModified(true), $user);
+        $existing = $this->fetchExisting($table, $uid);
+        // Any explicit aiCreated()/aiModified() call means the content was just
+        // (re-)touched by AI - always needs a fresh review, regardless of whether
+        // it was reviewed before.
+        $updated = $existing->withAiModified(true)->withReviewedBy(0)->withReviewedTimestamp(0);
+        $this->aiMetadataUpdate($table, $uid, $updated, $user);
     }
 
     // Clears the AI flag entirely, rather than just setting aiCreated/aiModified
@@ -116,15 +126,10 @@ final class AiLabelApi
         ]);
     }
 
-    private function applyFlag(string $table, int $uid, callable $mutate, ?BackendUserAuthentication $user): void
+    private function fetchExisting(string $table, int $uid): AiMetadata
     {
         $this->assertTableIsApplicable($table);
-        $existing = AiMetadata::fromJsonString(BackendUtility::getRecord($table, $uid, 'ai_metadata')['ai_metadata'] ?? null);
-        // Any explicit aiCreated()/aiModified() call means the content was just
-        // (re-)touched by AI - always needs a fresh review, regardless of whether
-        // it was reviewed before.
-        $updated = $mutate($existing)->withReviewedBy(0)->withReviewedTimestamp(0);
-        $this->aiMetadataUpdate($table, $uid, $updated, $user);
+        return AiMetadata::fromJsonString(BackendUtility::getRecord($table, $uid, 'ai_metadata')['ai_metadata'] ?? null);
     }
 
     private function resolveUser(?BackendUserAuthentication $user): BackendUserAuthentication

@@ -6,9 +6,16 @@ defined('TYPO3') or die();
 
 // Decode ai_created / ai_modified / reviewed from the ai_metadata JSON column into the
 // edit form, since these TCA checkboxes have no real column of their own.
+// Must also depend on TcaJson: on a new record, DatabaseRowDefaultValues forces
+// ai_metadata to '' (no TCA default set), and only TcaJson (for command=new) turns
+// that back into an array - without this second dependency, core's own provider
+// order between TcaJson and this class is unspecified.
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['formDataGroup']['tcaDatabaseRecord']
     [\B13\AiLabel\Form\FormDataProvider\EnrichAiMetaData::class] = [
-        'depends' => [\TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseEditRow::class],
+        'depends' => [
+            \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseEditRow::class,
+            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaJson::class,
+        ],
     ];
 
 // Fold ai_created / ai_modified / reviewed into the ai_metadata JSON column instead of

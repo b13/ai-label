@@ -76,6 +76,15 @@ final class AddAiMetaFieldsToTca
                 'label' => 'ai_metadata',
                 'config' => [
                     'type' => 'json',
+                    // Without this, FormEngine's DatabaseRowDefaultValues provider force-casts
+                    // a NULL value to '' before EnrichAiMetaData ever sees it - both for an
+                    // existing record whose column is genuinely NULL (isset() is false for a
+                    // null value, so it never takes the "keep current value" branch) and for
+                    // a brand new record (the field has no TCA default, so it falls back to
+                    // the same '' cast). 'nullable' + a 'default' of null make that provider
+                    // preserve/produce PHP null in both cases instead.
+                    'nullable' => true,
+                    'default' => null,
                 ],
             ];
 

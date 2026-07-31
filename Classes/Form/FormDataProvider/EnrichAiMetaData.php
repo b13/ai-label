@@ -16,9 +16,9 @@ use B13\AiLabel\Domain\Model\AiMetadata;
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
 
 // Decodes ai_created / ai_modified / reviewed from the ai_metadata JSON column into
-// the checkbox fields rendered in the form. ai_metadata is a real column (added via
-// AddAiMetadataColumnToSchema), so DatabaseEditRow already loaded it as part of the
-// row - no separate lookup needed.
+// the checkbox fields rendered in the form. ai_metadata is a real TCA type=json
+// column (added by AddAiMetaFieldsToTca), so DatabaseEditRow already loaded and
+// decoded it into an array as part of the row - no separate lookup needed.
 final class EnrichAiMetaData implements FormDataProviderInterface
 {
     public function addData(array $result): array
@@ -27,7 +27,7 @@ final class EnrichAiMetaData implements FormDataProviderInterface
             return $result;
         }
 
-        $metadata = new AiMetadata($result['databaseRow']['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromArray($result['databaseRow']['ai_metadata'] ?? null);
 
         $result['databaseRow']['ai_created'] = (int)$metadata->isAiCreated();
         $result['databaseRow']['ai_modified'] = (int)$metadata->isAiModified();

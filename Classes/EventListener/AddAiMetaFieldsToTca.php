@@ -18,8 +18,10 @@ use TYPO3\CMS\Core\Configuration\Event\AfterTcaCompilationEvent;
 
 // Adds the "ai_created" and "ai_modified" checkboxes to every editable table's TCA.
 // The fields (and "reviewed") are not backed by their own database columns - their
-// values are folded into the ai_metadata JSON column by AiMetaDataHandlerHook (schema
-// added by AddAiMetadataColumnToSchema).
+// values are folded by AiMetaDataHandlerHook into the ai_metadata column added below,
+// a real type=json TCA column (DefaultTcaSchema auto-creates the DB column for
+// type=json fields) that is never part of any type's showitem/palette, so it never
+// renders in the form.
 #[AsEventListener(identifier: 'ai-label/add-ai-meta-fields-to-tca')]
 final class AddAiMetaFieldsToTca
 {
@@ -69,6 +71,12 @@ final class AddAiMetaFieldsToTca
             ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
                 'showitem' => 'ai_created, ai_modified, --linebreak--, reviewed',
+            ];
+            $tca[$tableName]['columns']['ai_metadata'] = [
+                'label' => 'ai_metadata',
+                'config' => [
+                    'type' => 'json',
+                ],
             ];
 
             foreach ($tableConfig['types'] ?? [] as $typeKey => $typeConfig) {

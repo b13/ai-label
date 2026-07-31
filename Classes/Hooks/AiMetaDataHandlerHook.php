@@ -20,9 +20,10 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
-// Folds ai_created / ai_modified / reviewed into the ai_metadata JSON column (schema
-// added by AddAiMetadataColumnToSchema) as part of DataHandler's own insert/update -
-// no separate table, no separate query to write. "reviewed" is a plain boolean
+// Folds ai_created / ai_modified / reviewed into the ai_metadata JSON column (a real
+// type=json TCA column added by AddAiMetaFieldsToTca, never part of any showitem/
+// palette) as part of DataHandler's own insert/update - no separate table, no
+// separate query to write. "reviewed" is a plain boolean
 // checkbox in the form, but persisted as reviewed_by inside the JSON: the be_users
 // uid that reviewed it, or 0 for "review required".
 //
@@ -71,7 +72,7 @@ final class AiMetaDataHandlerHook
             return;
         }
 
-        $this->pendingValues[$table . ':' . $id] = (new AiMetadata(null))
+        $this->pendingValues[$table . ':' . $id] = (new AiMetadata())
             ->withAiCreated((bool)($incomingFieldArray['ai_created'] ?? false))
             ->withAiModified((bool)($incomingFieldArray['ai_modified'] ?? false))
             ->withReviewedBy(($incomingFieldArray['reviewed'] ?? false) ? 1 : 0);
@@ -93,8 +94,8 @@ final class AiMetaDataHandlerHook
         unset($this->pendingValues[$key]);
 
         $existingAiMetadata = $status === 'update'
-            ? new AiMetadata(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
-            : new AiMetadata(null);
+            ? AiMetadata::fromJsonString(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
+            : new AiMetadata();
 
         if (!$pendingAiMetadata->isFlagged() && !$existingAiMetadata->isFlagged() && !$existingAiMetadata->isReviewed()) {
             // Never flagged, and nothing stored yet - nothing to persist.
@@ -137,7 +138,7 @@ final class AiMetaDataHandlerHook
 
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
         // column - passing an already-encoded string here would double-encode it.
-        $fieldArray['ai_metadata'] = (new AiMetadata(null))
+        $fieldArray['ai_metadata'] = (new AiMetadata())
             ->withAiCreated($pendingAiMetadata->isAiCreated())
             ->withAiModified($pendingAiMetadata->isAiModified())
             ->withReviewedBy($reviewedBy)

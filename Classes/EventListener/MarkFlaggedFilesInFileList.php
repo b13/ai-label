@@ -52,7 +52,7 @@ final class MarkFlaggedFilesInFileList
         }
 
         $metaDataRow = $file->getMetaData()->get();
-        $metadata = new AiMetadata($metaDataRow['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromJsonString($metaDataRow['ai_metadata'] ?? null);
         if (!$metadata->isFlagged()) {
             return;
         }

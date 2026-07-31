@@ -46,10 +46,10 @@ final class MarkFlaggedRecordsInRecordList
         }
 
         $record = $event->getRecord();
-        // RecordFactory::createResolvedRecordFromDatabaseRow() filters toArray()
-        // against the TCA schema, dropping ai_metadata since it's schema-only and
-        // never added to TCA. RawRecord holds the actual, unfiltered database row.
-        $metadata = new AiMetadata($record->getRawRecord()?->toArray()['ai_metadata'] ?? null);
+        // RawRecord holds the actual, unfiltered database row - ai_metadata is not
+        // part of any type's showitem/palette, so the regular (filtered) record
+        // may not carry it depending on how it was resolved.
+        $metadata = AiMetadata::fromJsonString($record->getRawRecord()?->toArray()['ai_metadata'] ?? null);
         if (!$metadata->isFlagged()) {
             return;
         }

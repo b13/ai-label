@@ -30,7 +30,7 @@ final class VirtualCheckboxElement extends CheckboxToggleElement
     protected function wrapWithFieldsetAndLegend(string $innerHTML): string
     {
         if ($this->data['fieldName'] === 'reviewed') {
-            $aiMetadata = new AiMetadata($this->data['databaseRow']['ai_metadata'] ?? null);
+            $aiMetadata = AiMetadata::fromArray($this->data['databaseRow']['ai_metadata'] ?? null);
             if ($aiMetadata->isFlagged() === false) {
                 return parent::wrapWithFieldsetAndLegend($innerHTML);
             }

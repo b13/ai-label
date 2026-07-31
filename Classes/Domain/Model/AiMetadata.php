@@ -14,8 +14,14 @@ namespace B13\AiLabel\Domain\Model;
 
 // Immutable value object for the ai_metadata JSON column - not an Extbase entity,
 // there is no repository/persistence for this, DataHandler writes the column
-// directly (see AiMetaDataHandlerHook). Decodes once in the constructor so callers
-// don't have to poke at the raw array/JSON themselves.
+// directly (see AiMetaDataHandlerHook).
+//
+// ai_metadata is a real TCA type=json column, so depending on where a caller got
+// its data from, it's either a raw JSON string (e.g. a plain QueryBuilder fetch)
+// or an already-decoded array (e.g. FormEngine's DatabaseEditRow, which runs
+// BackendUtility::convertDatabaseRowValuesToPhp() on type=json columns). Callers
+// know which one they have - use fromJsonString()/fromArray() accordingly, or
+// plain `new self()` if there's no stored value at all yet.
 final class AiMetadata
 {
     private bool $aiCreated = false;
@@ -23,17 +29,27 @@ final class AiMetadata
     private int $reviewedBy = 0;
     private int $reviewedTimestamp = 0;
 
-    public function __construct(?string $json)
+    public static function fromJsonString(?string $json): self
     {
-        $decoded = is_string($json) && $json !== '' ? json_decode($json, true) : null;
-        if (!is_array($decoded)) {
-            return;
+        if ($json === null || $json === '') {
+            return new self();
+        }
+        $decoded = json_decode($json, true);
+        return self::fromArray(is_array($decoded) ? $decoded : null);
+    }
+
+    public static function fromArray(?array $data): self
+    {
+        $metadata = new self();
+        if ($data === null) {
+            return $metadata;
         }
 
-        $this->aiCreated = (bool)($decoded['ai_created'] ?? false);
-        $this->aiModified = (bool)($decoded['ai_modified'] ?? false);
-        $this->reviewedBy = (int)($decoded['reviewed_by'] ?? 0);
-        $this->reviewedTimestamp = (int)($decoded['reviewed_timestamp'] ?? 0);
+        $metadata->aiCreated = (bool)($data['ai_created'] ?? false);
+        $metadata->aiModified = (bool)($data['ai_modified'] ?? false);
+        $metadata->reviewedBy = (int)($data['reviewed_by'] ?? 0);
+        $metadata->reviewedTimestamp = (int)($data['reviewed_timestamp'] ?? 0);
+        return $metadata;
     }
 
     public function isAiCreated(): bool

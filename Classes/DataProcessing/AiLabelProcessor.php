@@ -34,8 +34,7 @@ final class AiLabelProcessor implements DataProcessorInterface
     ): array {
         $targetVariableName = $cObj->stdWrapValue('as', $processorConfiguration, 'aiMetadata');
         $record = $processedData['data'] ?? $cObj->data;
-        $value = $record['ai_metadata'] ?? null;
-        $processedData[$targetVariableName] = new AiMetadata(is_string($value) ? $value : null);
+        $processedData[$targetVariableName] = AiMetadata::fromJsonString($record['ai_metadata'] ?? null);
 
         return $processedData;
     }

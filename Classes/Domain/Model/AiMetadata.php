@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace B13\AiLabel\Domain\Model;
 
+/*
+ * This file is part of TYPO3 CMS-based extension "ai_label" by b13.
+ *
+ * It is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, either version 2
+ * of the License, or any later version.
+ */
+
 // Immutable value object for the ai_metadata JSON column - not an Extbase entity,
 // there is no repository/persistence for this, DataHandler writes the column
 // directly (see AiMetaDataHandlerHook). Decodes once in the constructor so callers

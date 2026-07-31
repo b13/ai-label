@@ -27,7 +27,11 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 #[Autoconfigure(public: true)]
 final class AiMetaDataHandlerHook
 {
-    /** @var array<string, array{ai_created: bool, ai_modified: bool, reviewed: bool}> */
+    // Keyed by "$table:$id". "reviewed" (the submitted checkbox, not yet the actual
+    // reviewing user) is stashed via reviewedBy as a 1/0 placeholder - only isReviewed()
+    // is ever read back from it here, the real backend user id is resolved later in
+    // processDatamap_postProcessFieldArray().
+    /** @var array<string, AiMetadata> */
     private array $pendingValues = [];
 
     public function __construct(
@@ -59,11 +63,10 @@ final class AiMetaDataHandlerHook
             return;
         }
 
-        $this->pendingValues["$table:$id"] = [
-            'ai_created' => (bool)($incomingFieldArray['ai_created'] ?? false),
-            'ai_modified' => (bool)($incomingFieldArray['ai_modified'] ?? false),
-            'reviewed' => (bool)($incomingFieldArray['reviewed'] ?? false),
-        ];
+        $this->pendingValues[$table . ':' . $id] = (new AiMetadata(null))
+            ->withAiCreated((bool)($incomingFieldArray['ai_created'] ?? false))
+            ->withAiModified((bool)($incomingFieldArray['ai_modified'] ?? false))
+            ->withReviewedBy(($incomingFieldArray['reviewed'] ?? false) ? 1 : 0);
         unset($incomingFieldArray['ai_created'], $incomingFieldArray['ai_modified'], $incomingFieldArray['reviewed']);
     }
 
@@ -74,28 +77,23 @@ final class AiMetaDataHandlerHook
         array &$fieldArray,
         DataHandler $dataHandler
     ): void {
-        $key = "$table:$id";
+        $key = $table . ':' . $id;
         if (!isset($this->pendingValues[$key])) {
             return;
         }
-        $values = $this->pendingValues[$key];
+        $pendingAiMetadata = $this->pendingValues[$key];
         unset($this->pendingValues[$key]);
 
-        $aiCreated = $values['ai_created'];
-        $aiModified = $values['ai_modified'];
-        $reviewed = $values['reviewed'];
-        $aiFlagged = $aiCreated || $aiModified;
-
-        $existing = $status === 'update'
+        $existingAiMetadata = $status === 'update'
             ? new AiMetadata(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
             : new AiMetadata(null);
 
-        if (!$aiFlagged && !$existing->isFlagged() && !$existing->isReviewed()) {
+        if (!$pendingAiMetadata->isFlagged() && !$existingAiMetadata->isFlagged() && !$existingAiMetadata->isReviewed()) {
             // Never flagged, and nothing stored yet - nothing to persist.
             return;
         }
 
-        if (!$aiFlagged) {
+        if (!$pendingAiMetadata->isFlagged()) {
             // Unflagged now: nothing worth tracking anymore. NULL the column
             // (instead of storing all-zero JSON) so AiMetadataRecordFinder's
             // "WHERE ai_metadata IS NOT NULL" stays an accurate filter on its own.
@@ -110,15 +108,15 @@ final class AiMetaDataHandlerHook
         // because the checkbox wasn't touched, that's not a decision made in this save
         // and must not block the reset below - otherwise an already-reviewed record
         // could never be flagged for re-review again once content changes.
-        $reviewedJustTicked = $reviewed && !$existing->isReviewed();
+        $reviewedJustTicked = $pendingAiMetadata->isReviewed() && !$existingAiMetadata->isReviewed();
 
         // Content changing on an already-reviewed, still-flagged record means review
         // is needed again - reset reviewed_by, unless this same save also (re-)ticks it.
-        // $aiFlagged is already guaranteed true here (see the early return above).
+        // $pendingAiMetadata->isFlagged() is already guaranteed true here (see the early return above).
         $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
-        $needsReviewReset = $contentChanged && $existing->isReviewed() && !$reviewedJustTicked;
+        $needsReviewReset = $contentChanged && $existingAiMetadata->isReviewed() && !$reviewedJustTicked;
 
-        $reviewedBy = $needsReviewReset ? 0 : ($reviewed ? $beUserId : 0);
+        $reviewedBy = $needsReviewReset ? 0 : ($pendingAiMetadata->isReviewed() ? $beUserId : 0);
 
         // reviewed_timestamp only moves when reviewed actually flips from unreviewed
         // to reviewed in this save; it's cleared again once a reset makes it
@@ -126,14 +124,14 @@ final class AiMetaDataHandlerHook
         $reviewedTimestamp = match (true) {
             $needsReviewReset => 0,
             $reviewedJustTicked => (int)$this->context->getPropertyFromAspect('date', 'timestamp'),
-            default => $existing->getReviewedTimestamp(),
+            default => $existingAiMetadata->getReviewedTimestamp(),
         };
 
         // DataHandler/Doctrine already JSON-encode values written to a json-typed
         // column - passing an already-encoded string here would double-encode it.
         $fieldArray['ai_metadata'] = (new AiMetadata(null))
-            ->withAiCreated($aiCreated)
-            ->withAiModified($aiModified)
+            ->withAiCreated($pendingAiMetadata->isAiCreated())
+            ->withAiModified($pendingAiMetadata->isAiModified())
             ->withReviewedBy($reviewedBy)
             ->withReviewedTimestamp($reviewedTimestamp)
             ->toArray();

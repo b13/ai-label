@@ -12,9 +12,15 @@ namespace B13\AiLabel\Domain\Model;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\AiOrigin;
+
 // Immutable value object for the ai_metadata JSON column - not an Extbase entity,
 // there is no repository/persistence for this, DataHandler writes the column
 // directly (see AiMetaDataHandlerHook).
+//
+// A record's AI origin is exclusive - it's either untouched by AI, AI-generated,
+// or AI-modified, never more than one at once. That's why this wraps a single
+// AiOrigin enum rather than two independent aiCreated/aiModified booleans.
 //
 // ai_metadata is a real TCA type=json column, so depending on where a caller got
 // its data from, it's either a raw JSON string (e.g. a plain QueryBuilder fetch)
@@ -24,8 +30,7 @@ namespace B13\AiLabel\Domain\Model;
 // plain `new self()` if there's no stored value at all yet.
 final class AiMetadata
 {
-    private bool $aiCreated = false;
-    private bool $aiModified = false;
+    private AiOrigin $origin = AiOrigin::Human;
     private int $reviewedBy = 0;
     private int $reviewedTimestamp = 0;
 
@@ -45,26 +50,30 @@ final class AiMetadata
             return $metadata;
         }
 
-        $metadata->aiCreated = (bool)($data['ai_created'] ?? false);
-        $metadata->aiModified = (bool)($data['ai_modified'] ?? false);
+        $metadata->origin = AiOrigin::tryFrom((int)($data['ai_origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
         $metadata->reviewedBy = (int)($data['reviewed_by'] ?? 0);
         $metadata->reviewedTimestamp = (int)($data['reviewed_timestamp'] ?? 0);
         return $metadata;
     }
 
+    public function getOrigin(): AiOrigin
+    {
+        return $this->origin;
+    }
+
     public function isAiCreated(): bool
     {
-        return $this->aiCreated;
+        return $this->origin === AiOrigin::Generated;
     }
 
     public function isAiModified(): bool
     {
-        return $this->aiModified;
+        return $this->origin === AiOrigin::Manipulated;
     }
 
     public function isFlagged(): bool
     {
-        return $this->aiCreated || $this->aiModified;
+        return $this->origin !== AiOrigin::Human;
     }
 
     public function getReviewedBy(): int
@@ -82,17 +91,10 @@ final class AiMetadata
         return $this->reviewedTimestamp;
     }
 
-    public function withAiCreated(bool $aiCreated): self
+    public function withOrigin(AiOrigin $origin): self
     {
         $clone = clone $this;
-        $clone->aiCreated = $aiCreated;
-        return $clone;
-    }
-
-    public function withAiModified(bool $aiModified): self
-    {
-        $clone = clone $this;
-        $clone->aiModified = $aiModified;
+        $clone->origin = $origin;
         return $clone;
     }
 
@@ -117,8 +119,7 @@ final class AiMetadata
     public function toArray(): array
     {
         return [
-            'ai_created' => (int)$this->aiCreated,
-            'ai_modified' => (int)$this->aiModified,
+            'ai_origin' => $this->origin->value,
             'reviewed_by' => $this->reviewedBy,
             'reviewed_timestamp' => $this->reviewedTimestamp,
         ];

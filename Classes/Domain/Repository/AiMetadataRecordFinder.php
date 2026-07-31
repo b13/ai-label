@@ -26,7 +26,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 
 // Collects records across the applicable tables whose ai_metadata marks them as
-// ai_created or ai_modified. Not an Extbase repository, no persistence layer in
+// flagged (AI-created or AI-modified). Not an Extbase repository, no persistence layer in
 // use here - just a plain query helper, used by the overview module (site-wide)
 // and MarkFlaggedPageInLayoutModule (single page, tt_content only).
 //

@@ -1,3 +1,3 @@
 tt_content
 ,uid,pid,header,ai_metadata
-,1,1,Some content,"{""ai_created"": 1, ""ai_modified"": 0, ""reviewed_by"": 1, ""reviewed_timestamp"": 1440000000}"
+,1,1,Some content,"{""ai_origin"": 1, ""reviewed_by"": 1, ""reviewed_timestamp"": 1440000000}"

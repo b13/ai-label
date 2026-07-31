@@ -12,6 +12,7 @@ namespace B13\AiLabel\Hooks;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiLabelApi;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
@@ -21,14 +22,14 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
-// Folds ai_created / ai_modified / reviewed into the ai_metadata JSON column (a real
-// type=json TCA column added by AddAiMetaFieldsToTca, never part of any showitem/
-// palette) as part of DataHandler's own insert/update - no separate table, no
-// separate query to write. "reviewed" is a plain boolean
-// checkbox in the form, but persisted as reviewed_by inside the JSON: the be_users
-// uid that reviewed it, or 0 for "review required".
+// Folds ai_origin / reviewed into the ai_metadata JSON column (a real type=json TCA
+// column added by AddAiMetaFieldsToTca, never part of any showitem/palette) as part
+// of DataHandler's own insert/update - no separate table, no separate query to
+// write. "reviewed" is a plain boolean checkbox in the form, but persisted as
+// reviewed_by inside the JSON: the be_users uid that reviewed it, or 0 for "review
+// required".
 //
-// As long as a record is flagged ai_created/ai_modified, a save that changes real
+// As long as a record is flagged (ai_origin != Human), a save that changes real
 // content resets reviewed_by to 0, so the editor has to review again - unless that
 // same save also actively ticks "reviewed" from 0/none to 1 (reviewed wins over
 // forcing a reset). Reviewed already being set and simply staying set (checkbox
@@ -61,7 +62,7 @@ final class AiMetaDataHandlerHook
      * Runs before DataHandler's own fillInFieldArray()/checkValue()/
      * compareFieldArrayWithCurrentAndUnset() ever see these fields. That last one
      * reads $currentRecord[$col] for every submitted field to decide whether it is
-     * unchanged - since these 3 fields have no real column of their own, that access
+     * unchanged - since these 2 fields have no real column of their own, that access
      * is an undefined array key, and TYPO3's error handler turns that PHP warning
      * into a thrown exception, aborting the whole save. Stripping them here, before
      * they ever reach that code, avoids it entirely.
@@ -73,18 +74,17 @@ final class AiMetaDataHandlerHook
         DataHandler $dataHandler
     ): void {
         if (
-            !array_key_exists('ai_created', $incomingFieldArray)
-            && !array_key_exists('ai_modified', $incomingFieldArray)
+            !array_key_exists('ai_origin', $incomingFieldArray)
             && !array_key_exists('reviewed', $incomingFieldArray)
         ) {
             return;
         }
 
+        $origin = AiOrigin::tryFrom((int)($incomingFieldArray['ai_origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
         $this->pendingValues[$table . ':' . $id] = (new AiMetadata())
-            ->withAiCreated((bool)($incomingFieldArray['ai_created'] ?? false))
-            ->withAiModified((bool)($incomingFieldArray['ai_modified'] ?? false))
+            ->withOrigin($origin)
             ->withReviewedBy(($incomingFieldArray['reviewed'] ?? false) ? 1 : 0);
-        unset($incomingFieldArray['ai_created'], $incomingFieldArray['ai_modified'], $incomingFieldArray['reviewed']);
+        unset($incomingFieldArray['ai_origin'], $incomingFieldArray['reviewed']);
     }
 
     public function processDatamap_postProcessFieldArray(
@@ -150,8 +150,7 @@ final class AiMetaDataHandlerHook
         };
 
         $finalAiMetadata = (new AiMetadata())
-            ->withAiCreated($pendingAiMetadata->isAiCreated())
-            ->withAiModified($pendingAiMetadata->isAiModified())
+            ->withOrigin($pendingAiMetadata->getOrigin())
             ->withReviewedBy($reviewedBy)
             ->withReviewedTimestamp($reviewedTimestamp);
 

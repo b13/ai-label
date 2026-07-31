@@ -36,7 +36,7 @@ final class RecordMetadataViewHelperTest extends FunctionalTestCase
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
         ));
         $view->assign('record', [
-            'ai_metadata' => '{"ai_created":1,"ai_modified":0,"reviewed_by":5,"reviewed_timestamp":1440000000}',
+            'ai_metadata' => '{"ai_origin":1,"reviewed_by":5,"reviewed_timestamp":1440000000}',
         ]);
 
         self::assertSame('1||5|1440000000', trim($view->render('RecordMetadata')));
@@ -60,7 +60,7 @@ final class RecordMetadataViewHelperTest extends FunctionalTestCase
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
         ));
         $view->assign('record', [
-            'ai_metadata' => '{"ai_created":0,"ai_modified":1,"reviewed_by":0,"reviewed_timestamp":0}',
+            'ai_metadata' => '{"ai_origin":2,"reviewed_by":0,"reviewed_timestamp":0}',
         ]);
 
         self::assertSame('|1|0|0', trim($view->render('RecordMetadataInline')));

@@ -13,10 +13,10 @@ namespace B13\AiLabel\Service;
  */
 
 use B13\AiLabel\Configuration\ApplicableTablesProvider;
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -55,26 +55,21 @@ final class AiLabelApi
 
     public function aiCreated(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
-        $existing = $this->fetchExisting($table, $uid);
-        // Any explicit aiCreated()/aiModified() call means the content was just
-        // (re-)touched by AI - always needs a fresh review, regardless of whether
-        // it was reviewed before.
-        $updated = $existing->withAiCreated(true)->withReviewedBy(0)->withReviewedTimestamp(0);
-        $this->aiMetadataUpdate($table, $uid, $updated, $user);
+        // Origin is exclusive and reviewedBy/reviewedTimestamp default to 0 already -
+        // no need to fetch the record's current ai_metadata first, this fully replaces
+        // it. Any explicit aiCreated()/aiModified() call means the content was just
+        // (re-)touched by AI - always needs a fresh review, regardless of whether it
+        // was reviewed before.
+        $this->aiMetadataUpdate($table, $uid, (new AiMetadata())->withOrigin(AiOrigin::Generated), $user);
     }
 
     public function aiModified(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
-        $existing = $this->fetchExisting($table, $uid);
-        // Any explicit aiCreated()/aiModified() call means the content was just
-        // (re-)touched by AI - always needs a fresh review, regardless of whether
-        // it was reviewed before.
-        $updated = $existing->withAiModified(true)->withReviewedBy(0)->withReviewedTimestamp(0);
-        $this->aiMetadataUpdate($table, $uid, $updated, $user);
+        $this->aiMetadataUpdate($table, $uid, (new AiMetadata())->withOrigin(AiOrigin::Manipulated), $user);
     }
 
-    // Clears the AI flag entirely, rather than just setting aiCreated/aiModified
-    // to false - see aiMetadataUpdate()'s $aiMetadata=null case.
+    // Clears the AI flag entirely (origin back to Human) - see aiMetadataUpdate()'s
+    // $aiMetadata=null case.
     public function aiRemoved(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
         $this->aiMetadataUpdate($table, $uid, null, $user);
@@ -124,12 +119,6 @@ final class AiLabelApi
             'user' => $backendUser->getUserId(),
             'aiMetadata' => $aiMetadata?->toArray(),
         ]);
-    }
-
-    private function fetchExisting(string $table, int $uid): AiMetadata
-    {
-        $this->assertTableIsApplicable($table);
-        return AiMetadata::fromJsonString(BackendUtility::getRecord($table, $uid, 'ai_metadata')['ai_metadata'] ?? null);
     }
 
     private function resolveUser(?BackendUserAuthentication $user): BackendUserAuthentication

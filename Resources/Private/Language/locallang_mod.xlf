@@ -18,11 +18,8 @@
             <trans-unit id="overview.reviewed">
                 <source>Reviewed</source>
             </trans-unit>
-            <trans-unit id="field.ai_created">
-                <source>AI created</source>
-            </trans-unit>
-            <trans-unit id="field.ai_modified">
-                <source>AI modified</source>
+            <trans-unit id="overview.origin">
+                <source>Origin</source>
             </trans-unit>
             <trans-unit id="overview.empty.title">
                 <source>Nothing flagged</source>

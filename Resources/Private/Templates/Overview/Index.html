@@ -18,8 +18,7 @@
                     <tr>
                         <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.table" /></th>
                         <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.title" /></th>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:field.ai_created" /></th>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:field.ai_modified" /></th>
+                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.origin" /></th>
                         <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.reviewed" /></th>
                     </tr>
                 </thead>
@@ -37,12 +36,8 @@
                             </td>
                             <td>
                                 <f:if condition="{record.metadata.aiCreated}">
-                                    <core:icon identifier="actions-check" />
-                                </f:if>
-                            </td>
-                            <td>
-                                <f:if condition="{record.metadata.aiModified}">
-                                    <core:icon identifier="actions-check" />
+                                    <f:then><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.generated" /></f:then>
+                                    <f:else><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.manipulated" /></f:else>
                                 </f:if>
                             </td>
                             <td>

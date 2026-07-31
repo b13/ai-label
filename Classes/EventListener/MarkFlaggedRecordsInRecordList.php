@@ -26,9 +26,9 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 // (same event class, different constructor/methods depending on the running
 // TYPO3 version - the early return below is the only thing telling them apart).
 //
-// Marks ai_created/ai_modified records in the Web > List module's action column,
-// the same place edit/copy/delete live - similar to how the localize-metadata
-// button appears in the file list.
+// Marks records flagged as AI-created/AI-modified in the Web > List module's action
+// column, the same place edit/copy/delete live - similar to how the
+// localize-metadata button appears in the file list.
 #[AsEventListener(identifier: 'ai-label/mark-flagged-records-in-list')]
 final class MarkFlaggedRecordsInRecordList
 {

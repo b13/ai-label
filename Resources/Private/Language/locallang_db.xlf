@@ -3,10 +3,16 @@
     <file source-language="en" datatype="plaintext" original="messages" date="2026-07-29T00:00:00Z" product-name="ai_label">
         <header/>
         <body>
-            <trans-unit id="field.ai_created">
+            <trans-unit id="field.ai_origin">
+                <source>AI origin</source>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.human">
+                <source>No AI involvement</source>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.generated">
                 <source>AI created</source>
             </trans-unit>
-            <trans-unit id="field.ai_modified">
+            <trans-unit id="field.ai_origin.manipulated">
                 <source>AI modified</source>
             </trans-unit>
             <trans-unit id="tabs.aiMetadata">

@@ -26,8 +26,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
                     'pid' => 1,
                     'header' => 'A new content element',
                     'CType' => 'text',
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     'reviewed' => 0,
                 ],
             ],
@@ -46,8 +45,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
                     'pid' => 1,
                     'header' => 'A plain content element',
                     'CType' => 'text',
-                    'ai_created' => 0,
-                    'ai_modified' => 0,
+                    'ai_origin' => 0,
                     'reviewed' => 0,
                 ],
             ],
@@ -65,8 +63,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_created' => 0,
-                    'ai_modified' => 0,
+                    'ai_origin' => 0,
                     'reviewed' => 0,
                 ],
             ],
@@ -83,8 +80,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_created' => 0,
-                    'ai_modified' => 0,
+                    'ai_origin' => 0,
                     'reviewed' => 0,
                 ],
             ],
@@ -101,8 +97,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     'reviewed' => 1,
                 ],
             ],
@@ -120,8 +115,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     // Stays checked (unchanged from the fixture) - the editor only
                     // fixed the header, they didn't touch the reviewed checkbox.
                     'reviewed' => 1,
@@ -141,8 +135,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     // Newly ticked in the very same save that also changes the header.
                     'reviewed' => 1,
                 ],
@@ -161,8 +154,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     'reviewed' => 0,
                 ],
             ],
@@ -184,8 +176,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_created' => 1,
-                    'ai_modified' => 0,
+                    'ai_origin' => 1,
                     'reviewed' => 1,
                 ],
             ],

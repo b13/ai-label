@@ -15,16 +15,34 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
 
 - No separate table. A JSON column `ai_metadata` is added directly to each applicable
   table's own schema (`tt_content`, `pages`, `sys_file_metadata` by default, extensible
-  via `ApplicableTablesEvent`/`ApplicableTablesProvider`).
-- `ai_created`/`ai_modified`/`reviewed` are TCA `type=user` fields (never `type=check`,
-  which would make `DefaultTcaSchema` auto-create a real DB column) - `VirtualCheckboxElement`
-  renders them exactly like `checkboxToggle` by extending `CheckboxToggleElement` directly.
+  via `ApplicableTablesEvent`/`ApplicableTablesProvider`), with `'nullable' => true,
+  'default' => null` in its TCA config (see "Gotchas" below for why that's required).
+- The AI origin is exclusive - a record is either untouched, AI-created, or AI-modified,
+  never more than one at once. This is modeled as `B13\AiLabel\Domain\Enum\AiOrigin: int`
+  (`Human = 0`, `Generated = 1`, `Manipulated = 2` - taken verbatim from the user's
+  wiki.txt spec, the one piece of that spec that was actually adopted, see "Frontend
+  integration" below for what wasn't). `reviewed` stays a separate boolean-shaped field,
+  untouched by this.
+- `ai_origin`/`reviewed` are TCA `type=user` fields (never `type=select`/`type=check`,
+  which would make `DefaultTcaSchema` auto-create a real DB column) -
+  `VirtualSelectElement`/`VirtualCheckboxElement` render them exactly like `selectSingle`/
+  `checkboxToggle` by extending `SelectSingleElement`/`CheckboxToggleElement` directly.
+  `TcaSelectItems` (the core provider that normally resolves a select's `items` into the
+  shape `SelectSingleElement::render()` needs) only runs for `config.type === 'select'`,
+  so it never touches `ai_origin` - `AddAiMetaFieldsToTca` therefore provides `items`
+  already in the plain `['label' => ..., 'value' => ...]` shape `render()` reads directly.
 - Everything is read/written through `B13\AiLabel\Domain\Model\AiMetadata` - an immutable
-  value object wrapping the JSON (`isAiCreated()`, `isAiModified()`, `isFlagged()`,
-  `isReviewed()`, `getReviewedBy()`, `getReviewedTimestamp()`, `withX()` cloners, `toArray()`).
-  Always go through this object - don't hand-roll JSON decode/encode elsewhere.
+  value object wrapping the JSON (`getOrigin()`, `isAiCreated()`, `isAiModified()`,
+  `isFlagged()`, `isReviewed()`, `getReviewedBy()`, `getReviewedTimestamp()`, `withOrigin()`/
+  `withReviewedBy()`/`withReviewedTimestamp()` cloners, `toArray()`). `isAiCreated()`/
+  `isAiModified()` are read-only derived accessors over `getOrigin()` - kept for a stable
+  public API (README, Fluid templates) even though the mutator side collapsed to a single
+  `withOrigin(AiOrigin)`. Always go through this object - don't hand-roll JSON decode/encode
+  elsewhere.
 - Unflagged records store `ai_metadata = NULL` (not all-zero JSON), so
   `AiMetadataRecordFinder`'s `WHERE ai_metadata IS NOT NULL` stays a cheap, accurate filter.
+  Exception: writes through `AiLabelApi`/`DataHandler` always end up as `{"ai_origin": 0,
+  ...}` instead of `NULL` - see "Gotchas" below.
 
 ## The review workflow (Classes/Hooks/AiMetaDataHandlerHook.php)
 
@@ -32,8 +50,8 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   `reviewed_timestamp`, not a plain boolean.
 - Two-stage hook, deliberately split:
   - `processDatamap_preProcessFieldArray` runs *before* DataHandler's own
-    `compareFieldArrayWithCurrentAndUnset()` - strips the three virtual fields from
-    `$incomingFieldArray` before that method reads `$currentRecord[$col]` for each of them
+    `compareFieldArrayWithCurrentAndUnset()` - strips the two virtual fields (`ai_origin`,
+    `reviewed`) from `$incomingFieldArray` before that method reads `$currentRecord[$col]` for each of them
     (undefined array key otherwise, which TYPO3's error handler escalates to a fatal
     exception, since these fields have no real column).
   - `processDatamap_postProcessFieldArray` does the actual decision-making and writes
@@ -59,6 +77,27 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   or autowiring silently fails to inject its dependencies. Same applies to DataProcessors
   and Fluid ViewHelpers (`TYPO3\CMS\Frontend\...\ContentDataProcessor` and Fluid's
   `ViewHelperResolver` both instantiate via `GeneralUtility::makeInstance()` too).
+
+## Gotchas
+
+- **`ai_metadata`'s TCA config needs `'nullable' => true, 'default' => null`.** Without it,
+  core's `DatabaseRowDefaultValues` FormDataProvider force-casts the field to `''` (empty
+  string) before `EnrichAiMetaData` ever sees it - both for an existing record whose column
+  is genuinely SQL `NULL` (`isset()` is `false` for a `null` array value, so
+  `DatabaseRowDefaultValues` never takes its "keep current value" branch) and for a brand
+  new record (no TCA default, same `''` fallback). The nullable/default config makes that
+  provider preserve/produce PHP `null` in both cases instead, which `AiMetadata::fromArray()`
+  already handles. Confirmed by temporarily reverting the config and watching
+  `EnrichAiMetaDataTest` fail with the exact reported production error - see that test.
+- **`DataHandler::checkValueForJson()` always coerces an explicitly submitted `null` into
+  `[]`, never SQL `NULL`.** This means `AiLabelApi::aiRemoved()`/`aiMetadataUpdate(...,
+  null, ...)` writes `{"ai_origin": 0, ...}`, not `NULL` - unlike the old
+  `AiMetaDataHandlerHook`-direct-`$fieldArray` write path for brand new records, which can
+  still produce a real `NULL` (see `NewRecordWithoutAiFlagsResult.csv`). Accepted tradeoff,
+  not worked around (would mean bypassing DataHandler) - only effect is
+  `AiMetadataRecordFinder`'s `WHERE ai_metadata IS NOT NULL` becomes a slightly less tight
+  pre-filter (a few never-actually-flagged rows pass it and get discarded in PHP via
+  `isFlagged()` afterwards).
 
 ## v13/v14 compatibility architecture
 
@@ -121,11 +160,16 @@ Known version-safe APIs (confirmed identical on v13.4 and v14, no split needed):
 
 Deliberately minimal: `AiLabelProcessor` (DataProcessor) and `RecordMetadataViewHelper`/
 `FileMetadataViewHelper` just hand the `AiMetadata` object through to Fluid - **no**
-decision DTO, no enum, no rendered HTML, no opinionated label text. An earlier attempt
-built a whole `AiLabelDecision`/`AiOrigin`/`AiLabelService` layer modeled on a wiki.txt
-spec the user never asked for - that was explicitly rejected and removed. If asked to
-extend the frontend integration, keep following the "just pass the object through"
-principle unless told otherwise.
+decision DTO, no rendered HTML, no opinionated label text. An earlier attempt built a
+whole `AiLabelDecision`/`AiOrigin`/`AiLabelService` layer modeled on a wiki.txt spec the
+user never asked for - that was explicitly rejected and removed. `AiOrigin` later came
+back (see "Data model") because the user explicitly asked for that one specific piece
+("den enum kannste so von der wiki.txt übernehmen") to replace the old two-boolean
+aiCreated/aiModified shape - but `AiLabelDecision`/`AiLabelService`/rendered-HTML/
+aria-label/site-settings config from that same spec were NOT re-requested and still
+don't exist. If asked to extend the frontend integration further, keep following the
+"just pass the object through" principle and don't reach back into wiki.txt for more
+unless explicitly told to.
 
 Both ViewHelpers return the `AiMetadata` object directly when used inline
 (`{ailabel:recordMetadata(record: data)}`), but return `''` when the optional `as`
@@ -169,7 +213,7 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   ```
   tt_content
   ,uid,pid,header,ai_metadata
-  ,1,1,Some content,"{""ai_created"":1,""ai_modified"":0,""reviewed_by"":0,""reviewed_timestamp"":0}"
+  ,1,1,Some content,"{""ai_origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
   ```
   `\NULL` (backslash prefix) is the special literal for SQL NULL - bare `NULL` is a
   4-character string literal.
@@ -202,6 +246,17 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
 - PHP booleans interpolated into Fluid text nodes cast via plain PHP rules: `true` -> `'1'`,
   `false` -> `''` (empty string, *not* `'0'`) - easy to get wrong when writing expected
   test output strings.
+- Testing a custom FormEngine element directly (`VirtualSelectElementTest`): get it from
+  the container (`$this->get(VirtualSelectElement::class)`, not `new` - it needs
+  `injectNodeFactory()` DI, which the container wires but a bare constructor call won't),
+  call `->setData([...])` with a minimal hand-built result array, then `->render()`. Needs
+  `$GLOBALS['BE_USER']`/`$GLOBALS['LANG']` set up (same as `AbstractDatahandler`) or
+  `getBackendUser()`/`getLanguageService()` throw `TypeError` on the `null` global. The
+  inherited `defaultFieldWizard` (`otherLanguageContent`, `defaultLanguageDifferences`)
+  reads `$this->data['processedTca']['columns'][$fieldName]` unconditionally, so that key
+  must be present too (real TCA config, e.g. `$GLOBALS['TCA']['tt_content']['columns']['ai_origin']`)
+  even though the test itself never touches TCA directly - a missing `processedTca` key
+  triggers PHP warnings, not a hard failure, so it's easy to miss.
 
 ## Coding conventions
 
@@ -220,5 +275,5 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
 - No double-quoted string interpolation (`"$table:$id"`) - use concatenation
   (`$table . ':' . $id`).
 - Prefer the domain object's own accessors over re-deriving booleans/values inline
-  (e.g. `$pendingAiMetadata->isFlagged()` over reconstructing `$aiCreated || $aiModified`
-  from separately-destructured local variables).
+  (e.g. `$pendingAiMetadata->isFlagged()` over reconstructing `$origin !== AiOrigin::Human`
+  from a separately-destructured local variable).

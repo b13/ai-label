@@ -13,15 +13,16 @@ namespace B13\AiLabel\EventListener;
  */
 
 use B13\AiLabel\Configuration\ApplicableTablesProvider;
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Configuration\Event\AfterTcaCompilationEvent;
 
-// Adds the "ai_created" and "ai_modified" checkboxes to every editable table's TCA.
-// The fields (and "reviewed") are not backed by their own database columns - their
-// values are folded by AiMetaDataHandlerHook into the ai_metadata column added below,
-// a real type=json TCA column (DefaultTcaSchema auto-creates the DB column for
-// type=json fields) that is never part of any type's showitem/palette, so it never
-// renders in the form.
+// Adds the "ai_origin" select (Human/Generated/Manipulated, exclusive) to every
+// editable table's TCA. The field (and "reviewed") is not backed by its own database
+// column - its value is folded by AiMetaDataHandlerHook into the ai_metadata column
+// added below, a real type=json TCA column (DefaultTcaSchema auto-creates the DB
+// column for type=json fields) that is never part of any type's showitem/palette, so
+// it never renders in the form.
 #[AsEventListener(identifier: 'ai-label/add-ai-meta-fields-to-tca')]
 final class AddAiMetaFieldsToTca
 {
@@ -36,23 +37,23 @@ final class AddAiMetaFieldsToTca
         foreach ($this->applicableTablesProvider->getApplicableTables() as $tableName) {
             $tableConfig = $tca[$tableName];
 
-            // type=user (not type=check) so DefaultTcaSchema never auto-creates a real
-            // database column for these - VirtualCheckboxElement renders them exactly
-            // like a normal checkboxToggle field.
-            $tca[$tableName]['columns']['ai_created'] = [
-                'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_created',
+            // type=user (not type=select) so DefaultTcaSchema never auto-creates a real
+            // database column for this - VirtualSelectElement renders it exactly like a
+            // normal selectSingle field. 'items' is already in the plain shape
+            // SelectSingleElement::render() reads directly - TcaSelectItems (the core
+            // provider that normally resolves 'items') only runs for type=select, so it
+            // never touches this field.
+            $tca[$tableName]['columns']['ai_origin'] = [
+                'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin',
                 'onChange' => 'reload',
                 'config' => [
                     'type' => 'user',
-                    'renderType' => 'aiLabelVirtualCheckbox',
-                ],
-            ];
-            $tca[$tableName]['columns']['ai_modified'] = [
-                'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_modified',
-                'onChange' => 'reload',
-                'config' => [
-                    'type' => 'user',
-                    'renderType' => 'aiLabelVirtualCheckbox',
+                    'renderType' => 'aiLabelVirtualSelect',
+                    'items' => [
+                        ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.human', 'value' => AiOrigin::Human->value],
+                        ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.generated', 'value' => AiOrigin::Generated->value],
+                        ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.manipulated', 'value' => AiOrigin::Manipulated->value],
+                    ],
                 ],
             ];
             // Only relevant while the record is flagged as AI-created/-modified
@@ -62,15 +63,10 @@ final class AddAiMetaFieldsToTca
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
                 ],
-                'displayCond' => [
-                    'OR' => [
-                        'FIELD:ai_created:=:1',
-                        'FIELD:ai_modified:=:1',
-                    ],
-                ],
+                'displayCond' => 'FIELD:ai_origin:!=:' . AiOrigin::Human->value,
             ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
-                'showitem' => 'ai_created, ai_modified, --linebreak--, reviewed',
+                'showitem' => 'ai_origin, --linebreak--, reviewed',
             ];
             $tca[$tableName]['columns']['ai_metadata'] = [
                 'label' => 'ai_metadata',

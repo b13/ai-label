@@ -11,12 +11,13 @@ overview module listing every flagged record.
 
 ## What it does
 
-- Adds `ai_created` / `ai_modified` checkboxes plus a `reviewed` checkbox to
-  every applicable table (`tt_content`, `pages`, `sys_file_metadata` by
-  default - extensible via `ApplicableTablesEvent`).
+- Adds an `ai_origin` select (`No AI involvement` / `AI created` / `AI modified`,
+  exclusive - a record is never both) plus a `reviewed` checkbox to every
+  applicable table (`tt_content`, `pages`, `sys_file_metadata` by default -
+  extensible via `ApplicableTablesEvent`).
 - State is stored in a single `ai_metadata` JSON column added directly to each
   applicable table's schema - no separate table, no TCA-visible real columns
-  for the checkboxes themselves.
+  for the select/checkbox themselves.
 - As long as a record is flagged, changing its content resets the review
   state, so an editor has to review it again - unless the same save also
   (re-)ticks "reviewed".
@@ -60,8 +61,12 @@ What this does for you:
 - **`aiCreated()`/`aiModified()` always reset the review state** (`reviewed_by`/
   `reviewedTimestamp` back to "needs review") - every call means the content was
   just (re-)touched by AI, regardless of whether it was reviewed before.
-- **`aiRemoved()` clears the flag entirely** - not just `aiCreated`/`aiModified`
-  set back to false.
+- **The AI origin is exclusive** - a record is either untouched by AI,
+  AI-created, or AI-modified, never more than one at once. Calling
+  `aiModified()` on a record that was `aiCreated()` replaces the origin, it
+  doesn't add to it.
+- **`aiRemoved()` clears the flag entirely** - origin back to "no AI
+  involvement", not just a boolean toggled off.
 - **Throws `\InvalidArgumentException`** if `$table` isn't one of the applicable
   tables (see below) - this API never silently writes `ai_metadata` onto a table
   that was never set up to carry it.
@@ -74,8 +79,8 @@ above are built on; use it directly if you've already computed the full
 ### Registering your own tables
 
 By default, `tt_content`, `pages` and `sys_file_metadata` are applicable (get
-the `ai_created`/`ai_modified`/`reviewed` fields, the `ai_metadata` column, and
-can be used with `AiLabelApi`). To add your own table, listen to
+the `ai_origin`/`reviewed` fields, the `ai_metadata` column, and can be used
+with `AiLabelApi`). To add your own table, listen to
 `B13\AiLabel\Event\ApplicableTablesEvent`:
 
 ```php
@@ -102,9 +107,10 @@ is entirely up to you.
 `AiMetadata` (`B13\AiLabel\Domain\Model\AiMetadata`) exposes:
 
 ```php
-$aiMetadata->isAiCreated(): bool
-$aiMetadata->isAiModified(): bool
-$aiMetadata->isFlagged(): bool       // isAiCreated() || isAiModified()
+$aiMetadata->getOrigin(): AiOrigin   // B13\AiLabel\Domain\Enum\AiOrigin: Human|Generated|Manipulated
+$aiMetadata->isAiCreated(): bool     // getOrigin() === AiOrigin::Generated
+$aiMetadata->isAiModified(): bool    // getOrigin() === AiOrigin::Manipulated
+$aiMetadata->isFlagged(): bool       // getOrigin() !== AiOrigin::Human
 $aiMetadata->isReviewed(): bool
 $aiMetadata->getReviewedBy(): int    // be_users uid, 0 if not reviewed
 $aiMetadata->getReviewedTimestamp(): int

@@ -12,6 +12,7 @@ namespace B13\AiLabel\Service;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Domain\Model\ReviewStatus;
 use TYPO3\CMS\Backend\Template\Components\Buttons\DropDownButton;
@@ -27,9 +28,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 //
 // Builds the small action-column marker shared by the record list and file list
 // event listeners: a single "AI" icon that opens a native Bootstrap dropdown
-// (data-bs-toggle, no custom JS) showing whether the record is
-// ai_created/ai_modified and whether it still needs review. getReviewStatus()
-// is the single source of truth for the label/color of the review state, so
+// (data-bs-toggle, no custom JS) showing the record's AI origin (created/modified)
+// and whether it still needs review. getReviewStatus() is the single source of
+// truth for the label/color of the review state, so
 // the dropdown, the plain badge (layout module, form legend, overview module)
 // and both TYPO3 versions never drift apart from each other.
 final class AiMetadataBadgeFactory
@@ -124,15 +125,11 @@ final class AiMetadataBadgeFactory
     {
         $languageService = $this->getLanguageService();
 
-        $flagParts = [];
-        if ($metadata->isAiCreated()) {
-            $flagParts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_created');
-        }
-        if ($metadata->isAiModified()) {
-            $flagParts[] = $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_modified');
-        }
-
-        return implode(', ', $flagParts);
+        return match ($metadata->getOrigin()) {
+            AiOrigin::Generated => $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.generated'),
+            AiOrigin::Manipulated => $languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.manipulated'),
+            AiOrigin::Human => '',
+        };
     }
 
     protected function getLanguageService(): LanguageService

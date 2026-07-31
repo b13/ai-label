@@ -8,4 +8,4 @@ sys_file
 
 sys_file_metadata
 ,uid,pid,file,ai_metadata
-,1,0,1,"{""ai_created"":1,""ai_modified"":0,""reviewed_by"":0,""reviewed_timestamp"":0}"
+,1,0,1,"{""ai_origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"

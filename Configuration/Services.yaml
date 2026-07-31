@@ -6,3 +6,7 @@ services:
 
   B13\AiLabel\:
     resource: '../Classes/*'
+
+  B13\AiLabel\DataProcessing\AiLabelProcessor:
+    tags:
+      - { name: 'data.processor', identifier: 'ai-label' }

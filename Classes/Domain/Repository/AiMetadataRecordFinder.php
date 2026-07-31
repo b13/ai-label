@@ -6,6 +6,7 @@ namespace B13\AiLabel\Domain\Repository;
 
 use B13\AiLabel\Configuration\ApplicableTablesProvider;
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
@@ -17,10 +18,11 @@ final class AiMetadataRecordFinder
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly ApplicableTablesProvider $applicableTablesProvider,
+        private readonly AiMetadataBadgeFactory $badgeFactory,
     ) {
     }
 
-    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata}> */
+    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, reviewBadge: string}> */
     public function findFlaggedRecords(): array
     {
         $records = [];
@@ -44,6 +46,11 @@ final class AiMetadataRecordFinder
                     'pid' => (int)$row['pid'],
                     'title' => BackendUtility::getRecordTitle($table, $row),
                     'metadata' => $metadata,
+                    // Same badge markup as everywhere else (form legend, layout
+                    // module) - built here instead of the Fluid template so the
+                    // "review required" vs "reviewed by X on Y" wording/color
+                    // can't drift apart between the two places.
+                    'reviewBadge' => $this->badgeFactory->getBadge($metadata),
                 ];
             }
         }

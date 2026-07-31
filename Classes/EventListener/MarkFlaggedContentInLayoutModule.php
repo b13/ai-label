@@ -6,20 +6,20 @@ namespace B13\AiLabel\EventListener;
 
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
-use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\View\Event\AfterPageContentPreviewRenderedEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 
 // Appends the AI marker to each flagged tt_content element's preview box in the
 // Page module's columns. ContentFetcher (which builds these rows) uses SELECT *,
 // so ai_metadata is already part of the raw row - unlike DatabaseRecordList,
-// no extra query-modifying listener is needed here.
+// no extra query-modifying listener is needed here. Just the plain badge (no
+// dropdown/edit-link) - the content preview isn't an action column, clicking the
+// preview itself already opens the element for editing.
 #[AsEventListener(identifier: 'ai-label/mark-flagged-content-in-layout')]
 final class MarkFlaggedContentInLayoutModule
 {
     public function __construct(
         private readonly AiMetadataBadgeFactory $badgeFactory,
-        private readonly UriBuilder $uriBuilder,
     ) {
     }
 
@@ -37,13 +37,8 @@ final class MarkFlaggedContentInLayoutModule
             return;
         }
 
-        $href = (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
-            'edit' => ['tt_content' => [$record->getUid() => 'edit']],
-            'returnUrl' => $event->getPageLayoutContext()->getReturnUrl(),
-        ]);
-
         $event->setPreviewContent(
-            $event->getPreviewContent() . $this->badgeFactory->createButton($metadata, $href)->render()
+            $event->getPreviewContent() . $this->badgeFactory->getBadge($metadata)
         );
     }
 }

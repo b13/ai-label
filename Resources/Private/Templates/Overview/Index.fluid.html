@@ -46,16 +46,7 @@
                                 </f:if>
                             </td>
                             <td>
-                                <f:if condition="{record.metadata.reviewed}">
-                                    <f:then>
-                                        <f:format.date format="d.m.Y H:i">@{record.metadata.reviewedTimestamp}</f:format.date>
-                                    </f:then>
-                                    <f:else>
-                                        <span class="badge badge-warning">
-                                            <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:notice.reviewRequired" />
-                                        </span>
-                                    </f:else>
-                                </f:if>
+                                <f:format.raw>{record.reviewBadge}</f:format.raw>
                             </td>
                         </tr>
                     </f:for>

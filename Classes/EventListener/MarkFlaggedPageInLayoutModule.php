@@ -7,27 +7,23 @@ namespace B13\AiLabel\EventListener;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\Controller\Event\ModifyPageLayoutContentEvent;
-use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Information\Typo3Version;
 
-// TYPO3 v14+ only - AiMetadataBadgeFactory::createButton() here uses
-// ComponentFactory, which doesn't exist on v13. ModifyPageLayoutContentEvent
-// itself is identical on both versions (unlike the record list/file list
-// events), so the split isn't strictly needed for the event - it's only here
-// because of the v14-only badge factory. See
+// TYPO3 v14+ only - only here because Services.yaml autowires this whole
+// directory and the v13 event class differs slightly. See
 // Classes/Legacy/EventListener/MarkFlaggedPageInLayoutModule.php for v13.
 //
 // The page itself never goes through AfterPageContentPreviewRenderedEvent - that
 // only fires per tt_content element shown in the columns - so the current page's
-// own flag is shown separately here, in the page module's header area.
+// own flag is shown separately here, in the page module's header area. Just the
+// plain badge (no dropdown/edit-link) - the header area isn't an action column.
 #[AsEventListener(identifier: 'ai-label/mark-flagged-page-in-layout')]
 final class MarkFlaggedPageInLayoutModule
 {
     public function __construct(
         private readonly AiMetadataBadgeFactory $badgeFactory,
-        private readonly UriBuilder $uriBuilder,
         private readonly Typo3Version $typo3Version,
     ) {
     }
@@ -50,13 +46,8 @@ final class MarkFlaggedPageInLayoutModule
             return;
         }
 
-        $href = (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
-            'edit' => ['pages' => [$pageId => 'edit']],
-            'returnUrl' => (string)$request->getUri(),
-        ]);
-
         $event->addHeaderContent(
-            '<div class="ai-label-page-marker">' . $this->badgeFactory->createButton($metadata, $href)->render() . '</div>'
+            '<div class="ai-label-page-marker">' . $this->badgeFactory->getBadge($metadata) . '</div>'
         );
     }
 }

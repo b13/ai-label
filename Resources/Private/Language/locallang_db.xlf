@@ -18,8 +18,8 @@
             <trans-unit id="notice.reviewRequired">
                 <source>Review required</source>
             </trans-unit>
-            <trans-unit id="recordlist.reviewedOn">
-                <source>Reviewed on %s</source>
+            <trans-unit id="notice.reviewedBy">
+                <source>Reviewed by %s on %s</source>
             </trans-unit>
         </body>
     </file>

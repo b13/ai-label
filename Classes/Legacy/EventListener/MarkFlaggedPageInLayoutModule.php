@@ -7,7 +7,6 @@ namespace B13\AiLabel\Legacy\EventListener;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\Controller\Event\ModifyPageLayoutContentEvent;
-use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Information\Typo3Version;
@@ -22,7 +21,6 @@ final class MarkFlaggedPageInLayoutModule
 {
     public function __construct(
         private readonly AiMetadataBadgeFactory $badgeFactory,
-        private readonly UriBuilder $uriBuilder,
         private readonly Typo3Version $typo3Version,
     ) {
     }
@@ -45,13 +43,8 @@ final class MarkFlaggedPageInLayoutModule
             return;
         }
 
-        $href = (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
-            'edit' => ['pages' => [$pageId => 'edit']],
-            'returnUrl' => (string)$request->getUri(),
-        ]);
-
         $event->addHeaderContent(
-            '<div class="ai-label-page-marker">' . $this->badgeFactory->createButtonHtml($metadata, $href) . '</div>'
+            '<div class="ai-label-page-marker">' . $this->badgeFactory->getBadge($metadata) . '</div>'
         );
     }
 }

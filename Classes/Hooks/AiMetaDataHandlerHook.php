@@ -9,6 +9,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
+use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
 // Folds ai_created / ai_modified / reviewed into the ai_metadata JSON column (schema
 // added by AddAiMetadataColumnToSchema) as part of DataHandler's own insert/update -
@@ -28,8 +30,10 @@ final class AiMetaDataHandlerHook
     /** @var array<string, array{ai_created: bool, ai_modified: bool, reviewed: bool}> */
     private array $pendingValues = [];
 
-    public function __construct(private readonly Context $context)
-    {
+    public function __construct(
+        private readonly Context $context,
+        private readonly TcaSchemaFactory $tcaSchemaFactory,
+    ) {
     }
 
     /**
@@ -150,17 +154,23 @@ final class AiMetaDataHandlerHook
      */
     private function hasRelevantContentChange(string $table, array $fieldArray): bool
     {
+        $schema = $this->tcaSchemaFactory->get($table);
+
         $ignoredFields = array_filter([
-            $GLOBALS['TCA'][$table]['ctrl']['tstamp'] ?? null,
-            $GLOBALS['TCA'][$table]['ctrl']['transOrigDiffSourceField'] ?? null,
+            $schema->hasCapability(TcaSchemaCapability::UpdatedAt)
+                ? $schema->getCapability(TcaSchemaCapability::UpdatedAt)->getFieldName()
+                : null,
+            $schema->hasCapability(TcaSchemaCapability::Language)
+                ? $schema->getCapability(TcaSchemaCapability::Language)->getDiffSourceField()?->getName()
+                : null,
         ]);
-        $columns = $GLOBALS['TCA'][$table]['columns'] ?? [];
 
         foreach ($fieldArray as $field => $value) {
             if (in_array($field, $ignoredFields, true)) {
                 continue;
             }
-            if (!empty($columns[$field]['config']['MM'])) {
+            $fieldConfig = $schema->hasField($field) ? $schema->getField($field)->getConfiguration() : [];
+            if (!empty($fieldConfig['MM'])) {
                 continue;
             }
             return true;

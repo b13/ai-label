@@ -2,3 +2,5 @@
 composer.lock
 var
 .php-cs-fixer.cache
+Build/phpunit/.phpunit.cache
+Build/phpunit/.phpunit.result.cache

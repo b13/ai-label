@@ -36,7 +36,11 @@
         "typo3/cms": {
             "web-dir": ".Build/Web",
             "app-dir": ".Build",
-            "extension-key": "ai_label"
+            "extension-key": "ai_label",
+            "version": "1.0.0",
+            "Package": {
+                "providesPackages": {}
+            }
         }
     }
 }

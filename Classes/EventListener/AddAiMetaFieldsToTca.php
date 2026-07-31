@@ -35,7 +35,6 @@ final class AddAiMetaFieldsToTca
                 'config' => [
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
-                    'default' => 0,
                 ],
             ];
             $tca[$tableName]['columns']['ai_modified'] = [
@@ -44,7 +43,6 @@ final class AddAiMetaFieldsToTca
                 'config' => [
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
-                    'default' => 0,
                 ],
             ];
             // Only relevant while the record is flagged as AI-created/-modified
@@ -53,7 +51,6 @@ final class AddAiMetaFieldsToTca
                 'config' => [
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
-                    'default' => 0,
                 ],
                 'displayCond' => [
                     'OR' => [

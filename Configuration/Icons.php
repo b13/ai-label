@@ -5,10 +5,10 @@ use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 return [
     'module-ailabel' => [
         'provider' => SvgIconProvider::class,
-        'source' => 'EXT:ai_label/Resources/Public/Icons/Module.svg',
+        'source' => 'EXT:ai_label/Resources/Public/Icons/Extension.svg',
     ],
-    'ai-label-sparkle' => [
+    'ai-label-info' => [
         'provider' => SvgIconProvider::class,
-        'source' => 'EXT:ai_label/Resources/Public/Icons/Sparkle.svg',
+        'source' => 'EXT:ai_label/Resources/Public/Icons/Extension.svg',
     ],
 ];

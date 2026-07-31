@@ -18,8 +18,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 // See Classes/Legacy/Service/AiMetadataBadgeFactory.php for the v13 equivalent.
 //
 // Builds the small action-column marker shared by the record list and file list
-// event listeners: a single "AI" sparkle icon that opens a native Bootstrap
-// dropdown (data-bs-toggle, no custom JS) showing whether the record is
+// event listeners: a single "AI" icon that opens a native Bootstrap dropdown
+// (data-bs-toggle, no custom JS) showing whether the record is
 // ai_created/ai_modified and whether it still needs review. getReviewStatus()
 // is the single source of truth for the label/color of the review state, so
 // the dropdown, the plain badge (layout module, form legend, overview module)
@@ -46,7 +46,7 @@ final class AiMetadataBadgeFactory
         $dropDown = $componentFactory->createDropDownButton()
             ->setLabel($flagLabel)
             ->setTitle($flagLabel)
-            ->setIcon($this->iconFactory->getIcon('ai-label-sparkle', IconSize::SMALL));
+            ->setIcon($this->iconFactory->getIcon('ai-label-info', IconSize::SMALL));
 
         $dropDown->addItem($componentFactory->createDropDownHeader()->setLabel($flagLabel));
         $dropDown->addItem(
@@ -68,7 +68,7 @@ final class AiMetadataBadgeFactory
         return '<div class="btn-group">'
             . '<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-bs-toggle="dropdown"'
             . ' aria-expanded="false" aria-label="' . htmlspecialchars($flagLabel) . '" title="' . htmlspecialchars($flagLabel) . '">'
-            . $this->iconFactory->getIcon('ai-label-sparkle', IconSize::SMALL)->render()
+            . $this->iconFactory->getIcon('ai-label-info', IconSize::SMALL)->render()
             . '</button>'
             . '<ul class="dropdown-menu">'
             . '<li><h6 class="dropdown-header">' . htmlspecialchars($flagLabel) . '</h6></li>'

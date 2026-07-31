@@ -19,6 +19,7 @@ use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Pagination\ArrayPaginator;
 use TYPO3\CMS\Core\Pagination\SlidingWindowPagination;
 
@@ -32,11 +33,13 @@ final class AiLabelOverviewController
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AiMetadataRecordFinder $recordFinder,
         private readonly UriBuilder $uriBuilder,
+        private readonly PageRenderer $pageRenderer,
     ) {
     }
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
+        $this->pageRenderer->addCssFile('EXT:ai_label/Resources/Public/Css/ai-label.css');
         $currentPageNumber = max(1, (int)($request->getQueryParams()['currentPage'] ?? 1));
 
         $paginator = new ArrayPaginator($this->recordFinder->findFlaggedRecords(), $currentPageNumber, self::ITEMS_PER_PAGE);

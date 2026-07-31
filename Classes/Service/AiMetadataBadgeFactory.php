@@ -85,11 +85,16 @@ final class AiMetadataBadgeFactory
             . '</div>';
     }
 
-    public function getBadge(AiMetadata $aiMetadata): string
+    public function getBadge(AiMetadata $aiMetadata, ?string $href = null): string
     {
         $status = $this->getReviewStatus($aiMetadata);
+        $badge = '<span class="badge ' . $status->badgeClass . '">' . htmlspecialchars($status->label) . '</span>';
 
-        return '<span class="badge ' . $status->badgeClass . '">' . htmlspecialchars($status->label) . '</span>';
+        if ($href === null) {
+            return $badge;
+        }
+
+        return '<a href="' . htmlspecialchars($href) . '">' . $badge . '</a>';
     }
 
     private function getReviewStatus(AiMetadata $metadata): ReviewStatus

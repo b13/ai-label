@@ -23,3 +23,10 @@
     align-items: center;
     margin-right: 4px;
 }
+
+/* The page's own badge - addHeaderContent() just stacks blocks top to bottom, so
+   right-align this one's own row instead of leaving it flush left. */
+.ai-label-page-marker {
+    display: flex;
+    justify-content: flex-end;
+}

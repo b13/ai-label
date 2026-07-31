@@ -16,6 +16,7 @@ use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use TYPO3\CMS\Backend\Controller\Event\ModifyPageLayoutContentEvent;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -41,6 +42,7 @@ final class MarkFlaggedPageInLayoutModule
         private readonly AiMetadataBadgeFactory $badgeFactory,
         private readonly AiMetadataRecordFinder $recordFinder,
         private readonly PageRenderer $pageRenderer,
+        private readonly UriBuilder $uriBuilder,
     ) {
     }
 
@@ -55,17 +57,20 @@ final class MarkFlaggedPageInLayoutModule
         $this->pageRenderer->addCssFile('EXT:ai_label/Resources/Public/Css/ai-label.css');
         $this->pageRenderer->loadJavaScriptModule('@b13/ai-label/main.js');
 
+        $returnUrl = (string)$request->getUri();
         $headerContent = '';
 
         $row = BackendUtility::getRecord('pages', $pageId, 'ai_metadata');
         $pageMetadata = new AiMetadata($row['ai_metadata'] ?? null);
         if ($pageMetadata->isFlagged()) {
-            $headerContent .= '<div class="ai-label-page-marker">' . $this->badgeFactory->getBadge($pageMetadata) . '</div>';
+            $href = $this->buildEditUrl('pages', $pageId, $returnUrl);
+            $headerContent .= '<div class="ai-label-page-marker">' . $this->badgeFactory->getBadge($pageMetadata, $href) . '</div>';
         }
 
         $contentBadges = [];
         foreach ($this->recordFinder->findFlaggedContentElementsOnPage($pageId) as $record) {
-            $contentBadges[$record['uid']] = $record['reviewBadge'];
+            $href = $this->buildEditUrl('tt_content', $record['uid'], $returnUrl);
+            $contentBadges[$record['uid']] = $this->badgeFactory->getBadge($record['metadata'], $href);
         }
         if ($contentBadges !== []) {
             $headerContent .= '<script type="application/json" id="ai-label-content-badges">' . json_encode($contentBadges) . '</script>';
@@ -74,5 +79,13 @@ final class MarkFlaggedPageInLayoutModule
         if ($headerContent !== '') {
             $event->addHeaderContent($headerContent);
         }
+    }
+
+    private function buildEditUrl(string $table, int $uid, string $returnUrl): string
+    {
+        return (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
+            'edit' => [$table => [$uid => 'edit']],
+            'returnUrl' => $returnUrl,
+        ]);
     }
 }

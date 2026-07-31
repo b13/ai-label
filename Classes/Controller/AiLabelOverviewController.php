@@ -13,6 +13,7 @@ namespace B13\AiLabel\Controller;
  */
 
 use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
+use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
@@ -32,6 +33,7 @@ final class AiLabelOverviewController
     public function __construct(
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AiMetadataRecordFinder $recordFinder,
+        private readonly AiMetadataBadgeFactory $badgeFactory,
         private readonly UriBuilder $uriBuilder,
         private readonly PageRenderer $pageRenderer,
     ) {
@@ -42,7 +44,16 @@ final class AiLabelOverviewController
         $this->pageRenderer->addCssFile('EXT:ai_label/Resources/Public/Css/ai-label.css');
         $currentPageNumber = max(1, (int)($request->getQueryParams()['currentPage'] ?? 1));
 
-        $paginator = new ArrayPaginator($this->recordFinder->findFlaggedRecords(), $currentPageNumber, self::ITEMS_PER_PAGE);
+        $returnUrl = (string)$request->getUri();
+        $records = array_map(
+            fn (array $record) => [
+                ...$record,
+                'reviewBadge' => $this->badgeFactory->getBadge($record['metadata'], $this->buildEditUrl($record['table'], $record['uid'], $returnUrl)),
+            ],
+            $this->recordFinder->findFlaggedRecords()
+        );
+
+        $paginator = new ArrayPaginator($records, $currentPageNumber, self::ITEMS_PER_PAGE);
         $pagination = new SlidingWindowPagination($paginator, 7);
 
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
@@ -76,6 +87,14 @@ final class AiLabelOverviewController
             return null;
         }
         return (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER, ['currentPage' => $pageNumber]);
+    }
+
+    private function buildEditUrl(string $table, int $uid, string $returnUrl): string
+    {
+        return (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
+            'edit' => [$table => [$uid => 'edit']],
+            'returnUrl' => $returnUrl,
+        ]);
     }
 
     protected function getLanguageService(): LanguageService

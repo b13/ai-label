@@ -26,6 +26,25 @@ use TYPO3\CMS\Backend\Form\Element\SelectSingleElement;
 // therefore provides 'items' already in the plain ['label' => ..., 'value' => ...]
 // shape SelectSingleElement::render() reads directly (plain array access, not
 // dependent on TcaSelectItems' SelectItem objects).
+//
+// TcaSelectItems is also the thing that normally resolves each item's LLL:... label
+// into plain text (AbstractItemProvider::sanitizeItemArray() calling sL()) - since it
+// never runs here either, 'items' still has raw LLL:... labels by the time render()
+// reads them (SelectSingleElement::render() itself never calls sL() - it's not its
+// job, item resolution happens upstream in the real type=select case). Resolved here
+// instead, right before rendering, to keep the same LLL:... syntax working across
+// backend user languages without baking one language's text into cached TCA.
 final class VirtualSelectElement extends SelectSingleElement
 {
+    public function render(): array
+    {
+        $languageService = $this->getLanguageService();
+        $items = $this->data['parameterArray']['fieldConf']['config']['items'] ?? [];
+        $this->data['parameterArray']['fieldConf']['config']['items'] = array_map(
+            static fn (array $item): array => [...$item, 'label' => $languageService->sL($item['label'])],
+            $items
+        );
+
+        return parent::render();
+    }
 }

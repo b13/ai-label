@@ -72,7 +72,7 @@ final class AddAiMetaFieldsToTca
                 'displayCond' => 'FIELD:tx_ailabel_origin:!=:' . AiOrigin::Human->value,
             ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
-                'showitem' => 'tx_ailabel_origin, --linebreak--, tx_ailabel_reviewed',
+                'showitem' => 'tx_ailabel_origin, tx_ailabel_reviewed',
             ];
             $tca[$tableName]['columns']['tx_ailabel_metadata'] = [
                 'label' => 'tx_ailabel_metadata',

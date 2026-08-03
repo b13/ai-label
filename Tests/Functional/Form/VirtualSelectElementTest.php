@@ -67,5 +67,14 @@ final class VirtualSelectElementTest extends FunctionalTestCase
         self::assertMatchesRegularExpression('/<option value="2"[^>]*selected="selected"/', $result['html']);
         self::assertDoesNotMatchRegularExpression('/<option value="0"[^>]*selected="selected"/', $result['html']);
         self::assertDoesNotMatchRegularExpression('/<option value="1"[^>]*selected="selected"/', $result['html']);
+
+        // The items' LLL:... labels must be resolved to actual text - TcaSelectItems
+        // (the core provider that normally does this) never runs for our type=user
+        // field, see the class docblock. (The field's own top-level label is a
+        // separate, generic resolution step this minimal test doesn't reproduce - not
+        // what's under test here, so only the <option> texts themselves are checked.)
+        self::assertStringContainsString('>No AI involvement<', $result['html']);
+        self::assertStringContainsString('>AI created<', $result['html']);
+        self::assertStringContainsString('>AI modified<', $result['html']);
     }
 }

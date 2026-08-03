@@ -266,7 +266,7 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   the container (`$this->get(VirtualSelectElement::class)`, not `new` - it needs
   `injectNodeFactory()` DI, which the container wires but a bare constructor call won't),
   call `->setData([...])` with a minimal hand-built result array, then `->render()`. Needs
-  `$GLOBALS['BE_USER']`/`$GLOBALS['LANG']` set up (same as `AbstractDatahandler`) or
+  `$GLOBALS['BE_USER']`/`$GLOBALS['LANG']` set up (same as `AiMetaDataHandlerHookTest`) or
   `getBackendUser()`/`getLanguageService()` throw `TypeError` on the `null` global. The
   inherited `defaultFieldWizard` (`otherLanguageContent`, `defaultLanguageDifferences`)
   reads `$this->data['processedTca']['columns'][$fieldName]` unconditionally, so that key

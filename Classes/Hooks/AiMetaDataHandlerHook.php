@@ -22,14 +22,14 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
-// Folds ai_origin / reviewed into the ai_metadata JSON column (a real type=json TCA
-// column added by AddAiMetaFieldsToTca, never part of any showitem/palette) as part
-// of DataHandler's own insert/update - no separate table, no separate query to
-// write. "reviewed" is a plain boolean checkbox in the form, but persisted as
-// reviewed_by inside the JSON: the be_users uid that reviewed it, or 0 for "review
-// required".
+// Folds tx_ailabel_origin / tx_ailabel_reviewed into the tx_ailabel_metadata JSON
+// column (a real type=json TCA column added by AddAiMetaFieldsToTca, never part of
+// any showitem/palette) as part of DataHandler's own insert/update - no separate
+// table, no separate query to write. "tx_ailabel_reviewed" is a plain boolean
+// checkbox in the form, but persisted as reviewed_by inside the JSON: the be_users
+// uid that reviewed it, or 0 for "review required".
 //
-// As long as a record is flagged (ai_origin != Human), a save that changes real
+// As long as a record is flagged (origin != Human), a save that changes real
 // content resets reviewed_by to 0, so the editor has to review again - unless that
 // same save also actively ticks "reviewed" from 0/none to 1 (reviewed wins over
 // forcing a reset). Reviewed already being set and simply staying set (checkbox
@@ -74,17 +74,17 @@ final class AiMetaDataHandlerHook
         DataHandler $dataHandler
     ): void {
         if (
-            !array_key_exists('ai_origin', $incomingFieldArray)
-            && !array_key_exists('reviewed', $incomingFieldArray)
+            !array_key_exists('tx_ailabel_origin', $incomingFieldArray)
+            && !array_key_exists('tx_ailabel_reviewed', $incomingFieldArray)
         ) {
             return;
         }
 
-        $origin = AiOrigin::tryFrom((int)($incomingFieldArray['ai_origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
+        $origin = AiOrigin::tryFrom((int)($incomingFieldArray['tx_ailabel_origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
         $this->pendingValues[$table . ':' . $id] = (new AiMetadata())
             ->withOrigin($origin)
-            ->withReviewedBy(($incomingFieldArray['reviewed'] ?? false) ? 1 : 0);
-        unset($incomingFieldArray['ai_origin'], $incomingFieldArray['reviewed']);
+            ->withReviewedBy(($incomingFieldArray['tx_ailabel_reviewed'] ?? false) ? 1 : 0);
+        unset($incomingFieldArray['tx_ailabel_origin'], $incomingFieldArray['tx_ailabel_reviewed']);
     }
 
     public function processDatamap_postProcessFieldArray(
@@ -102,7 +102,7 @@ final class AiMetaDataHandlerHook
         unset($this->pendingValues[$key]);
 
         $existingAiMetadata = $status === 'update'
-            ? AiMetadata::fromJsonString(BackendUtility::getRecord($table, (int)$id, 'ai_metadata')['ai_metadata'] ?? null)
+            ? AiMetadata::fromJsonString(BackendUtility::getRecord($table, (int)$id, 'tx_ailabel_metadata')['tx_ailabel_metadata'] ?? null)
             : new AiMetadata();
 
         if (!$pendingAiMetadata->isFlagged() && !$existingAiMetadata->isFlagged() && !$existingAiMetadata->isReviewed()) {
@@ -118,7 +118,7 @@ final class AiMetaDataHandlerHook
                 // New records: see the class docblock - AiLabelApi can't target a row
                 // that doesn't exist yet, so this one case still writes $fieldArray
                 // directly, same as before.
-                $fieldArray['ai_metadata'] = null;
+                $fieldArray['tx_ailabel_metadata'] = null;
             }
             return;
         }
@@ -160,7 +160,7 @@ final class AiMetaDataHandlerHook
             // New records: see the class docblock. DataHandler/Doctrine already
             // JSON-encode values written to a json-typed column - passing an
             // already-encoded string here would double-encode it.
-            $fieldArray['ai_metadata'] = $finalAiMetadata->toArray();
+            $fieldArray['tx_ailabel_metadata'] = $finalAiMetadata->toArray();
         }
     }
 

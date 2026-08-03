@@ -46,7 +46,7 @@ final class MarkFlaggedRecordsInRecordList
         }
 
         $row = $event->getRecord();
-        $metadata = AiMetadata::fromJsonString($row['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromJsonString($row['tx_ailabel_metadata'] ?? null);
         if (!$metadata->isFlagged()) {
             return;
         }

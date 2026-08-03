@@ -31,18 +31,18 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *   $bypassAccessCheckForRecords is set, which this class never does, or the
  *   user is admin). It does so silently though (populates $errorLog, never
  *   throws), so aiMetadataUpdate() turns a non-empty errorLog into an exception.
- * - The change ends up in sys_history: submitting ai_metadata as a plain datamap
- *   field (instead of injecting it afterwards, like AiMetaDataHandlerHook has to
- *   for form submissions) means DataHandler's own
+ * - The change ends up in sys_history: submitting tx_ailabel_metadata as a plain
+ *   datamap field (instead of injecting it afterwards, like AiMetaDataHandlerHook
+ *   has to for form submissions) means DataHandler's own
  *   compareFieldArrayWithCurrentAndUnset() - the method that decides what gets
  *   logged - sees the change before it runs, not only afterwards.
  *
  * Note: checkValueForJson() coerces an explicitly submitted null into an empty
  * array, not SQL NULL - aiRemoved() therefore stores {} rather than NULL. This
  * doesn't affect isFlagged()/AiMetadata behaviour, only makes
- * AiMetadataRecordFinder's "WHERE ai_metadata IS NOT NULL" a slightly less tight
- * pre-filter (a few never-actually-flagged rows may pass it and get discarded in
- * PHP afterwards).
+ * AiMetadataRecordFinder's "WHERE tx_ailabel_metadata IS NOT NULL" a slightly less
+ * tight pre-filter (a few never-actually-flagged rows may pass it and get discarded
+ * in PHP afterwards).
  */
 #[Autoconfigure(public: true)]
 final class AiLabelApi
@@ -56,8 +56,8 @@ final class AiLabelApi
     public function aiCreated(string $table, int $uid, ?BackendUserAuthentication $user = null): void
     {
         // Origin is exclusive and reviewedBy/reviewedTimestamp default to 0 already -
-        // no need to fetch the record's current ai_metadata first, this fully replaces
-        // it. Any explicit aiCreated()/aiModified() call means the content was just
+        // no need to fetch the record's current tx_ailabel_metadata first, this fully
+        // replaces it. Any explicit aiCreated()/aiModified() call means the content was just
         // (re-)touched by AI - always needs a fresh review, regardless of whether it
         // was reviewed before.
         $this->aiMetadataUpdate($table, $uid, (new AiMetadata())->withOrigin(AiOrigin::Generated), $user);
@@ -89,14 +89,14 @@ final class AiLabelApi
 
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
         $dataHandler->start(
-            [$table => [$uid => ['ai_metadata' => $aiMetadata?->toArray() ?? []]]],
+            [$table => [$uid => ['tx_ailabel_metadata' => $aiMetadata?->toArray() ?? []]]],
             [],
             $backendUser
         );
         $dataHandler->process_datamap();
 
         if (!empty($dataHandler->errorLog)) {
-            $this->logger->error('Failed to update ai_metadata on {table}:{uid}', [
+            $this->logger->error('Failed to update tx_ailabel_metadata on {table}:{uid}', [
                 'table' => $table,
                 'uid' => $uid,
                 'user' => $backendUser->getUserId(),
@@ -104,7 +104,7 @@ final class AiLabelApi
             ]);
             throw new \RuntimeException(
                 sprintf(
-                    'Backend user %d is not allowed to update ai_metadata on %s:%d, or the record does not exist.',
+                    'Backend user %d is not allowed to update tx_ailabel_metadata on %s:%d, or the record does not exist.',
                     $backendUser->getUserId(),
                     $table,
                     $uid
@@ -113,7 +113,7 @@ final class AiLabelApi
             );
         }
 
-        $this->logger->debug('Updated ai_metadata on {table}:{uid}', [
+        $this->logger->debug('Updated tx_ailabel_metadata on {table}:{uid}', [
             'table' => $table,
             'uid' => $uid,
             'user' => $backendUser->getUserId(),
@@ -134,7 +134,7 @@ final class AiLabelApi
 
     // $table must be registered via ApplicableTablesProvider/ApplicableTablesEvent
     // (tt_content, pages and sys_file_metadata by default) - this API doesn't
-    // silently write ai_metadata onto tables that were never set up to carry it.
+    // silently write tx_ailabel_metadata onto tables that were never set up to carry it.
     private function assertTableIsApplicable(string $table): void
     {
         if (!$this->applicableTablesProvider->isTableApplicable($table)) {

@@ -17,12 +17,18 @@ use B13\AiLabel\Domain\Enum\AiOrigin;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Configuration\Event\AfterTcaCompilationEvent;
 
-// Adds the "ai_origin" select (Human/Generated/Manipulated, exclusive) to every
-// editable table's TCA. The field (and "reviewed") is not backed by its own database
-// column - its value is folded by AiMetaDataHandlerHook into the ai_metadata column
-// added below, a real type=json TCA column (DefaultTcaSchema auto-creates the DB
-// column for type=json fields) that is never part of any type's showitem/palette, so
-// it never renders in the form.
+// Adds the "tx_ailabel_origin" select (Human/Generated/Manipulated, exclusive) to
+// every editable table's TCA. The field (and "tx_ailabel_reviewed") is not backed by
+// its own database column - its value is folded by AiMetaDataHandlerHook into the
+// tx_ailabel_metadata column added below, a real type=json TCA column
+// (DefaultTcaSchema auto-creates the DB column for type=json fields) that is never
+// part of any type's showitem/palette, so it never renders in the form.
+//
+// All three field names are prefixed (tx_ailabel_...) to avoid colliding with a
+// field of the same name some other extension might add to the same table -
+// unlike the JSON keys inside the metadata column itself, which stay short
+// (origin/reviewed_by/reviewed_timestamp) since that column is entirely private to
+// this extension.
 #[AsEventListener(identifier: 'ai-label/add-ai-meta-fields-to-tca')]
 final class AddAiMetaFieldsToTca
 {
@@ -43,7 +49,7 @@ final class AddAiMetaFieldsToTca
             // SelectSingleElement::render() reads directly - TcaSelectItems (the core
             // provider that normally resolves 'items') only runs for type=select, so it
             // never touches this field.
-            $tca[$tableName]['columns']['ai_origin'] = [
+            $tca[$tableName]['columns']['tx_ailabel_origin'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin',
                 'onChange' => 'reload',
                 'config' => [
@@ -57,19 +63,19 @@ final class AddAiMetaFieldsToTca
                 ],
             ];
             // Only relevant while the record is flagged as AI-created/-modified
-            $tca[$tableName]['columns']['reviewed'] = [
+            $tca[$tableName]['columns']['tx_ailabel_reviewed'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.reviewed',
                 'config' => [
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
                 ],
-                'displayCond' => 'FIELD:ai_origin:!=:' . AiOrigin::Human->value,
+                'displayCond' => 'FIELD:tx_ailabel_origin:!=:' . AiOrigin::Human->value,
             ];
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
-                'showitem' => 'ai_origin, --linebreak--, reviewed',
+                'showitem' => 'tx_ailabel_origin, --linebreak--, tx_ailabel_reviewed',
             ];
-            $tca[$tableName]['columns']['ai_metadata'] = [
-                'label' => 'ai_metadata',
+            $tca[$tableName]['columns']['tx_ailabel_metadata'] = [
+                'label' => 'tx_ailabel_metadata',
                 'config' => [
                     'type' => 'json',
                     // Without this, FormEngine's DatabaseRowDefaultValues provider force-casts

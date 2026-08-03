@@ -1,3 +1,3 @@
 tt_content
-,uid,pid,header,ai_metadata
-,1,1,A new content element,"{""ai_origin"": 1, ""reviewed_by"": 0, ""reviewed_timestamp"": 0}"
+,uid,pid,header,tx_ailabel_metadata
+,1,1,A new content element,"{""origin"": 1, ""reviewed_by"": 0, ""reviewed_timestamp"": 0}"

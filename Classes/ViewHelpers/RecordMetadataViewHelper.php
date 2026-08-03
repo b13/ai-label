@@ -44,7 +44,7 @@ final class RecordMetadataViewHelper extends AbstractViewHelper
 
     public function render(): string|AiMetadata
     {
-        $metadata = AiMetadata::fromJsonString($this->arguments['record']['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromJsonString($this->arguments['record']['tx_ailabel_metadata'] ?? null);
 
         if ($this->arguments['as'] !== null) {
             // Same convention as f:variable: assign as a side effect and render

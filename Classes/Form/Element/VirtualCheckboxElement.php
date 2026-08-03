@@ -19,8 +19,8 @@ use TYPO3\CMS\Backend\Form\Element\CheckboxToggleElement;
 // TCA type=user delegating to core's checkboxToggle rendering. DefaultTcaSchema only
 // auto-creates a database column for TCA type=check fields, never for type=user -
 // so this renders exactly like a normal checkbox toggle without ever gaining a real
-// column. AiMetaDataHandlerHook folds the submitted value into ai_metadata instead.
-// $this->nodeFactory is inherited from AbstractFormElement (injectNodeFactory()).
+// column. AiMetaDataHandlerHook folds the submitted value into tx_ailabel_metadata
+// instead. $this->nodeFactory is inherited from AbstractFormElement (injectNodeFactory()).
 final class VirtualCheckboxElement extends CheckboxToggleElement
 {
     public function __construct(private readonly AiMetadataBadgeFactory $badgeFactory)
@@ -29,8 +29,8 @@ final class VirtualCheckboxElement extends CheckboxToggleElement
 
     protected function wrapWithFieldsetAndLegend(string $innerHTML): string
     {
-        if ($this->data['fieldName'] === 'reviewed') {
-            $aiMetadata = AiMetadata::fromArray($this->data['databaseRow']['ai_metadata'] ?? null);
+        if ($this->data['fieldName'] === 'tx_ailabel_reviewed') {
+            $aiMetadata = AiMetadata::fromArray($this->data['databaseRow']['tx_ailabel_metadata'] ?? null);
             if ($aiMetadata->isFlagged() === false) {
                 return parent::wrapWithFieldsetAndLegend($innerHTML);
             }

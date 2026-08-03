@@ -26,8 +26,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
                     'pid' => 1,
                     'header' => 'A new content element',
                     'CType' => 'text',
-                    'ai_origin' => 1,
-                    'reviewed' => 0,
+                    'tx_ailabel_origin' => 1,
+                    'tx_ailabel_reviewed' => 0,
                 ],
             ],
         ];
@@ -45,8 +45,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
                     'pid' => 1,
                     'header' => 'A plain content element',
                     'CType' => 'text',
-                    'ai_origin' => 0,
-                    'reviewed' => 0,
+                    'tx_ailabel_origin' => 0,
+                    'tx_ailabel_reviewed' => 0,
                 ],
             ],
         ];
@@ -63,8 +63,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_origin' => 0,
-                    'reviewed' => 0,
+                    'tx_ailabel_origin' => 0,
+                    'tx_ailabel_reviewed' => 0,
                 ],
             ],
         ];
@@ -80,8 +80,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_origin' => 0,
-                    'reviewed' => 0,
+                    'tx_ailabel_origin' => 0,
+                    'tx_ailabel_reviewed' => 0,
                 ],
             ],
         ];
@@ -97,8 +97,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_origin' => 1,
-                    'reviewed' => 1,
+                    'tx_ailabel_origin' => 1,
+                    'tx_ailabel_reviewed' => 1,
                 ],
             ],
         ];
@@ -115,10 +115,10 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_origin' => 1,
+                    'tx_ailabel_origin' => 1,
                     // Stays checked (unchanged from the fixture) - the editor only
                     // fixed the header, they didn't touch the reviewed checkbox.
-                    'reviewed' => 1,
+                    'tx_ailabel_reviewed' => 1,
                 ],
             ],
         ];
@@ -135,9 +135,9 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_origin' => 1,
+                    'tx_ailabel_origin' => 1,
                     // Newly ticked in the very same save that also changes the header.
-                    'reviewed' => 1,
+                    'tx_ailabel_reviewed' => 1,
                 ],
             ],
         ];
@@ -154,8 +154,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             'tt_content' => [
                 1 => [
                     'header' => 'Updated content',
-                    'ai_origin' => 1,
-                    'reviewed' => 0,
+                    'tx_ailabel_origin' => 1,
+                    'tx_ailabel_reviewed' => 0,
                 ],
             ],
         ];
@@ -168,7 +168,7 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
     // of writing $fieldArray directly: compareFieldArrayWithCurrentAndUnset() (the
     // method that decides what gets logged) only ever sees the change this way -
     // this verifies a real sys_history entry actually shows up, not just that the
-    // final ai_metadata value ends up correct.
+    // final tx_ailabel_metadata value ends up correct.
     #[Test]
     public function updatingAnExistingRecordWritesToSysHistory(): void
     {
@@ -176,8 +176,8 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
         $data = [
             'tt_content' => [
                 1 => [
-                    'ai_origin' => 1,
-                    'reviewed' => 1,
+                    'tx_ailabel_origin' => 1,
+                    'tx_ailabel_reviewed' => 1,
                 ],
             ],
         ];
@@ -196,6 +196,6 @@ class AiMetaDataHandlerHookTest extends AbstractDatahandler
             ->fetchAllAssociative();
 
         self::assertNotEmpty($historyEntries, 'Expected at least one sys_history entry for tt_content:1');
-        self::assertStringContainsString('ai_metadata', $historyEntries[0]['history_data']);
+        self::assertStringContainsString('tx_ailabel_metadata', $historyEntries[0]['history_data']);
     }
 }

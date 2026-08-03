@@ -13,24 +13,34 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
 
 ## Data model
 
-- No separate table. A JSON column `ai_metadata` is added directly to each applicable
-  table's own schema (`tt_content`, `pages`, `sys_file_metadata` by default, extensible
-  via `ApplicableTablesEvent`/`ApplicableTablesProvider`), with `'nullable' => true,
-  'default' => null` in its TCA config (see "Gotchas" below for why that's required).
+- No separate table. A JSON column `tx_ailabel_metadata` is added directly to each
+  applicable table's own schema (`tt_content`, `pages`, `sys_file_metadata` by default,
+  extensible via `ApplicableTablesEvent`/`ApplicableTablesProvider`), with
+  `'nullable' => true, 'default' => null` in its TCA config (see "Gotchas" below for
+  why that's required).
+- All TCA field/column names are prefixed `tx_ailabel_...` to avoid colliding with a
+  same-named field another extension might add to the same table. The JSON keys
+  *inside* the metadata column stay short/unprefixed (`origin`, `reviewed_by`,
+  `reviewed_timestamp`) - that column is entirely private to this extension, so there's
+  no cross-extension collision risk to guard against there. Don't conflate the two: a
+  TCA field name and the JSON key it ends up folded into under the same logical concept
+  are deliberately different strings now (e.g. field `tx_ailabel_origin` <-> JSON key
+  `origin`).
 - The AI origin is exclusive - a record is either untouched, AI-created, or AI-modified,
   never more than one at once. This is modeled as `B13\AiLabel\Domain\Enum\AiOrigin: int`
   (`Human = 0`, `Generated = 1`, `Manipulated = 2` - taken verbatim from the user's
   wiki.txt spec, the one piece of that spec that was actually adopted, see "Frontend
-  integration" below for what wasn't). `reviewed` stays a separate boolean-shaped field,
-  untouched by this.
-- `ai_origin`/`reviewed` are TCA `type=user` fields (never `type=select`/`type=check`,
-  which would make `DefaultTcaSchema` auto-create a real DB column) -
-  `VirtualSelectElement`/`VirtualCheckboxElement` render them exactly like `selectSingle`/
-  `checkboxToggle` by extending `SelectSingleElement`/`CheckboxToggleElement` directly.
-  `TcaSelectItems` (the core provider that normally resolves a select's `items` into the
-  shape `SelectSingleElement::render()` needs) only runs for `config.type === 'select'`,
-  so it never touches `ai_origin` - `AddAiMetaFieldsToTca` therefore provides `items`
-  already in the plain `['label' => ..., 'value' => ...]` shape `render()` reads directly.
+  integration" below for what wasn't). `tx_ailabel_reviewed` stays a separate
+  boolean-shaped field, untouched by this.
+- `tx_ailabel_origin`/`tx_ailabel_reviewed` are TCA `type=user` fields (never
+  `type=select`/`type=check`, which would make `DefaultTcaSchema` auto-create a real DB
+  column) - `VirtualSelectElement`/`VirtualCheckboxElement` render them exactly like
+  `selectSingle`/`checkboxToggle` by extending `SelectSingleElement`/`CheckboxToggleElement`
+  directly. `TcaSelectItems` (the core provider that normally resolves a select's `items`
+  into the shape `SelectSingleElement::render()` needs) only runs for
+  `config.type === 'select'`, so it never touches `tx_ailabel_origin` -
+  `AddAiMetaFieldsToTca` therefore provides `items` already in the plain
+  `['label' => ..., 'value' => ...]` shape `render()` reads directly.
 - Everything is read/written through `B13\AiLabel\Domain\Model\AiMetadata` - an immutable
   value object wrapping the JSON (`getOrigin()`, `isAiCreated()`, `isAiModified()`,
   `isFlagged()`, `isReviewed()`, `getReviewedBy()`, `getReviewedTimestamp()`, `withOrigin()`/
@@ -39,10 +49,10 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   public API (README, Fluid templates) even though the mutator side collapsed to a single
   `withOrigin(AiOrigin)`. Always go through this object - don't hand-roll JSON decode/encode
   elsewhere.
-- Unflagged records store `ai_metadata = NULL` (not all-zero JSON), so
-  `AiMetadataRecordFinder`'s `WHERE ai_metadata IS NOT NULL` stays a cheap, accurate filter.
-  Exception: writes through `AiLabelApi`/`DataHandler` always end up as `{"ai_origin": 0,
-  ...}` instead of `NULL` - see "Gotchas" below.
+- Unflagged records store `tx_ailabel_metadata = NULL` (not all-zero JSON), so
+  `AiMetadataRecordFinder`'s `WHERE tx_ailabel_metadata IS NOT NULL` stays a cheap,
+  accurate filter. Exception: writes through `AiLabelApi`/`DataHandler` always end up as
+  `{"origin": 0, ...}` instead of `NULL` - see "Gotchas" below.
 
 ## The review workflow (Classes/Hooks/AiMetaDataHandlerHook.php)
 
@@ -50,13 +60,15 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   `reviewed_timestamp`, not a plain boolean.
 - Two-stage hook, deliberately split:
   - `processDatamap_preProcessFieldArray` runs *before* DataHandler's own
-    `compareFieldArrayWithCurrentAndUnset()` - strips the two virtual fields (`ai_origin`,
-    `reviewed`) from `$incomingFieldArray` before that method reads `$currentRecord[$col]` for each of them
-    (undefined array key otherwise, which TYPO3's error handler escalates to a fatal
-    exception, since these fields have no real column).
+    `compareFieldArrayWithCurrentAndUnset()` - strips the two virtual fields
+    (`tx_ailabel_origin`, `tx_ailabel_reviewed`) from `$incomingFieldArray` before that
+    method reads `$currentRecord[$col]` for each of them (undefined array key otherwise,
+    which TYPO3's error handler escalates to a fatal exception, since these fields have
+    no real column).
   - `processDatamap_postProcessFieldArray` does the actual decision-making and writes
-    `$fieldArray['ai_metadata']` as a **plain PHP array** (DataHandler/Doctrine JSON-encode
-    it themselves for json-typed columns - encoding it yourself double-encodes it).
+    `$fieldArray['tx_ailabel_metadata']` as a **plain PHP array** (DataHandler/Doctrine
+    JSON-encode it themselves for json-typed columns - encoding it yourself
+    double-encodes it).
 - Business rule: as long as a record is flagged, a save that changes real content resets
   `reviewed_by` to 0 - *unless* that same save also actively ticks "reviewed" from
   unreviewed to reviewed ("reviewed wins"). Reviewed merely *staying* ticked (checkbox
@@ -80,10 +92,10 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
 
 ## Gotchas
 
-- **`ai_metadata`'s TCA config needs `'nullable' => true, 'default' => null`.** Without it,
-  core's `DatabaseRowDefaultValues` FormDataProvider force-casts the field to `''` (empty
-  string) before `EnrichAiMetaData` ever sees it - both for an existing record whose column
-  is genuinely SQL `NULL` (`isset()` is `false` for a `null` array value, so
+- **`tx_ailabel_metadata`'s TCA config needs `'nullable' => true, 'default' => null`.**
+  Without it, core's `DatabaseRowDefaultValues` FormDataProvider force-casts the field to
+  `''` (empty string) before `EnrichAiMetaData` ever sees it - both for an existing record
+  whose column is genuinely SQL `NULL` (`isset()` is `false` for a `null` array value, so
   `DatabaseRowDefaultValues` never takes its "keep current value" branch) and for a brand
   new record (no TCA default, same `''` fallback). The nullable/default config makes that
   provider preserve/produce PHP `null` in both cases instead, which `AiMetadata::fromArray()`
@@ -91,13 +103,17 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   `EnrichAiMetaDataTest` fail with the exact reported production error - see that test.
 - **`DataHandler::checkValueForJson()` always coerces an explicitly submitted `null` into
   `[]`, never SQL `NULL`.** This means `AiLabelApi::aiRemoved()`/`aiMetadataUpdate(...,
-  null, ...)` writes `{"ai_origin": 0, ...}`, not `NULL` - unlike the old
+  null, ...)` writes `{"origin": 0, ...}`, not `NULL` - unlike the old
   `AiMetaDataHandlerHook`-direct-`$fieldArray` write path for brand new records, which can
   still produce a real `NULL` (see `NewRecordWithoutAiFlagsResult.csv`). Accepted tradeoff,
   not worked around (would mean bypassing DataHandler) - only effect is
-  `AiMetadataRecordFinder`'s `WHERE ai_metadata IS NOT NULL` becomes a slightly less tight
-  pre-filter (a few never-actually-flagged rows pass it and get discarded in PHP via
-  `isFlagged()` afterwards).
+  `AiMetadataRecordFinder`'s `WHERE tx_ailabel_metadata IS NOT NULL` becomes a slightly
+  less tight pre-filter (a few never-actually-flagged rows pass it and get discarded in
+  PHP via `isFlagged()` afterwards).
+- **TCA field names and the JSON keys inside the metadata column are intentionally
+  different strings** (see "Data model") - e.g. the form submits `tx_ailabel_origin`,
+  but `AiMetadata::toArray()`/`fromArray()` read/write the JSON key `origin`. Don't
+  assume they match when tracing a value through `AiMetaDataHandlerHook`.
 
 ## v13/v14 compatibility architecture
 
@@ -212,8 +228,8 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   see `git log` around the CSV-format fix. Reference format:
   ```
   tt_content
-  ,uid,pid,header,ai_metadata
-  ,1,1,Some content,"{""ai_origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
+  ,uid,pid,header,tx_ailabel_metadata
+  ,1,1,Some content,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
   ```
   `\NULL` (backslash prefix) is the special literal for SQL NULL - bare `NULL` is a
   4-character string literal.
@@ -254,9 +270,10 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   `getBackendUser()`/`getLanguageService()` throw `TypeError` on the `null` global. The
   inherited `defaultFieldWizard` (`otherLanguageContent`, `defaultLanguageDifferences`)
   reads `$this->data['processedTca']['columns'][$fieldName]` unconditionally, so that key
-  must be present too (real TCA config, e.g. `$GLOBALS['TCA']['tt_content']['columns']['ai_origin']`)
-  even though the test itself never touches TCA directly - a missing `processedTca` key
-  triggers PHP warnings, not a hard failure, so it's easy to miss.
+  must be present too (real TCA config, e.g.
+  `$GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin']`) even though the test
+  itself never touches TCA directly - a missing `processedTca` key triggers PHP warnings,
+  not a hard failure, so it's easy to miss.
 
 ## Coding conventions
 

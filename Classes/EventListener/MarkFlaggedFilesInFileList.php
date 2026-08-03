@@ -28,8 +28,8 @@ use TYPO3\CMS\Filelist\Event\ProcessFileListActionsEvent;
 // version - the early return below is the only thing telling them apart).
 //
 // Marks files flagged as AI-created/AI-modified in the File > Filelist module's
-// action column - ai_metadata lives on sys_file_metadata, not on the file itself,
-// so it comes from the file's metadata aspect.
+// action column - tx_ailabel_metadata lives on sys_file_metadata, not on the file
+// itself, so it comes from the file's metadata aspect.
 #[AsEventListener(identifier: 'ai-label/mark-flagged-files-in-filelist')]
 final class MarkFlaggedFilesInFileList
 {
@@ -52,7 +52,7 @@ final class MarkFlaggedFilesInFileList
         }
 
         $metaDataRow = $file->getMetaData()->get();
-        $metadata = AiMetadata::fromJsonString($metaDataRow['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromJsonString($metaDataRow['tx_ailabel_metadata'] ?? null);
         if (!$metadata->isFlagged()) {
             return;
         }

@@ -47,10 +47,11 @@ final class FileMetadataViewHelper extends AbstractViewHelper
     {
         /** @var FileReference $fileReference */
         $fileReference = $this->arguments['fileReference'];
-        // sys_file_metadata rows don't strictly have to carry ai_metadata (e.g. files
-        // never touched by this extension) - getProperty() throws for unknown keys.
-        // getProperty() itself is untyped (mixed) - it's a raw JSON string here.
-        $value = $fileReference->hasProperty('ai_metadata') ? $fileReference->getProperty('ai_metadata') : null;
+        // sys_file_metadata rows don't strictly have to carry tx_ailabel_metadata
+        // (e.g. files never touched by this extension) - getProperty() throws for
+        // unknown keys. getProperty() itself is untyped (mixed) - it's a raw JSON
+        // string here.
+        $value = $fileReference->hasProperty('tx_ailabel_metadata') ? $fileReference->getProperty('tx_ailabel_metadata') : null;
         $metadata = AiMetadata::fromJsonString(is_string($value) ? $value : null);
 
         if ($this->arguments['as'] !== null) {

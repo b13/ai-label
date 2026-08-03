@@ -25,8 +25,8 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 
-// Collects records across the applicable tables whose ai_metadata marks them as
-// flagged (AI-created or AI-modified). Not an Extbase repository, no persistence layer in
+// Collects records across the applicable tables whose tx_ailabel_metadata marks them
+// as flagged (AI-created or AI-modified). Not an Extbase repository, no persistence layer in
 // use here - just a plain query helper, used by the overview module (site-wide)
 // and MarkFlaggedPageInLayoutModule (single page, tt_content only).
 //
@@ -121,7 +121,7 @@ final class AiMetadataRecordFinder
         $queryBuilder
             ->select('*')
             ->from($table)
-            ->where($queryBuilder->expr()->isNotNull('ai_metadata'));
+            ->where($queryBuilder->expr()->isNotNull('tx_ailabel_metadata'));
 
         if ($pid !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pid, Connection::PARAM_INT)));
@@ -149,7 +149,7 @@ final class AiMetadataRecordFinder
             ->select('*')
             ->from($table)
             ->where(
-                $queryBuilder->expr()->isNotNull('ai_metadata'),
+                $queryBuilder->expr()->isNotNull('tx_ailabel_metadata'),
                 $queryBuilder->expr()->eq('t3ver_wsid', $queryBuilder->createNamedParameter($workspaceId, Connection::PARAM_INT)),
                 $queryBuilder->expr()->eq('t3ver_state', $queryBuilder->createNamedParameter(VersionState::NEW_PLACEHOLDER->value, Connection::PARAM_INT))
             );
@@ -164,7 +164,7 @@ final class AiMetadataRecordFinder
     /** @param array<string, mixed> $row */
     private function buildRecord(string $table, array $row): ?array
     {
-        $metadata = AiMetadata::fromJsonString($row['ai_metadata'] ?? null);
+        $metadata = AiMetadata::fromJsonString($row['tx_ailabel_metadata'] ?? null);
         if (!$metadata->isFlagged()) {
             return null;
         }

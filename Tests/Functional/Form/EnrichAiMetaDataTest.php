@@ -19,8 +19,8 @@ use TYPO3\CMS\Backend\Form\FormDataProvider\TcaJson;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 // Reproduces the exact FormEngine data provider chain EnrichAiMetaData runs in,
-// using the real, TCA-compiled ai_metadata column config (AddAiMetaFieldsToTca) -
-// not a hand-rolled one - so a regression (e.g. someone removing 'nullable'/'default'
+// using the real, TCA-compiled tx_ailabel_metadata column config (AddAiMetaFieldsToTca)
+// - not a hand-rolled one - so a regression (e.g. someone removing 'nullable'/'default'
 // from that listener) would break this test too.
 class EnrichAiMetaDataTest extends FunctionalTestCase
 {
@@ -39,32 +39,32 @@ class EnrichAiMetaDataTest extends FunctionalTestCase
     private function getProcessedTcaColumns(): array
     {
         return [
-            'ai_origin' => $GLOBALS['TCA']['tt_content']['columns']['ai_origin'],
-            'ai_metadata' => $GLOBALS['TCA']['tt_content']['columns']['ai_metadata'],
+            'tx_ailabel_origin' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin'],
+            'tx_ailabel_metadata' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_metadata'],
         ];
     }
 
     #[Test]
     public function existingRecordWithGenuineNullAiMetadataDoesNotCrash(): void
     {
-        // A record saved before ai_metadata was ever touched - real SQL NULL, already
-        // converted to PHP null by BackendUtility::convertDatabaseRowValuesToPhp() as
-        // DatabaseEditRow would do for an actual edit request.
+        // A record saved before tx_ailabel_metadata was ever touched - real SQL NULL,
+        // already converted to PHP null by BackendUtility::convertDatabaseRowValuesToPhp()
+        // as DatabaseEditRow would do for an actual edit request.
         $result = [
             'command' => 'edit',
-            'databaseRow' => ['uid' => 1, 'ai_metadata' => null],
+            'databaseRow' => ['uid' => 1, 'tx_ailabel_metadata' => null],
             'processedTca' => ['columns' => $this->getProcessedTcaColumns()],
         ];
 
         // isset() is false for a null value, so without 'nullable'/'default' on the TCA
-        // column, this core provider would force ai_metadata to '' here - proving the
-        // TCA config (not just EnrichAiMetaData itself) is what keeps it null.
+        // column, this core provider would force tx_ailabel_metadata to '' here -
+        // proving the TCA config (not just EnrichAiMetaData itself) is what keeps it null.
         $result = (new DatabaseRowDefaultValues())->addData($result);
-        self::assertNull($result['databaseRow']['ai_metadata']);
+        self::assertNull($result['databaseRow']['tx_ailabel_metadata']);
 
         $result = (new EnrichAiMetaData())->addData($result);
-        self::assertSame(0, $result['databaseRow']['ai_origin']);
-        self::assertSame(0, $result['databaseRow']['reviewed']);
+        self::assertSame(0, $result['databaseRow']['tx_ailabel_origin']);
+        self::assertSame(0, $result['databaseRow']['tx_ailabel_reviewed']);
     }
 
     #[Test]
@@ -80,11 +80,11 @@ class EnrichAiMetaDataTest extends FunctionalTestCase
         $result = (new DatabaseRowDefaultValues())->addData($result);
         // TcaJson only decodes/normalizes type=json fields for command=new.
         $result = (new TcaJson())->addData($result);
-        self::assertNull($result['databaseRow']['ai_metadata']);
+        self::assertNull($result['databaseRow']['tx_ailabel_metadata']);
 
         $result = (new EnrichAiMetaData())->addData($result);
-        self::assertSame(0, $result['databaseRow']['ai_origin']);
-        self::assertSame(0, $result['databaseRow']['reviewed']);
+        self::assertSame(0, $result['databaseRow']['tx_ailabel_origin']);
+        self::assertSame(0, $result['databaseRow']['tx_ailabel_reviewed']);
     }
 
     #[Test]
@@ -96,13 +96,13 @@ class EnrichAiMetaDataTest extends FunctionalTestCase
             'command' => 'edit',
             'databaseRow' => [
                 'uid' => 1,
-                'ai_metadata' => ['ai_origin' => 1, 'reviewed_by' => 0, 'reviewed_timestamp' => 0],
+                'tx_ailabel_metadata' => ['origin' => 1, 'reviewed_by' => 0, 'reviewed_timestamp' => 0],
             ],
             'processedTca' => ['columns' => $this->getProcessedTcaColumns()],
         ];
 
         $result = (new EnrichAiMetaData())->addData($result);
-        self::assertSame(1, $result['databaseRow']['ai_origin']);
-        self::assertSame(0, $result['databaseRow']['reviewed']);
+        self::assertSame(1, $result['databaseRow']['tx_ailabel_origin']);
+        self::assertSame(0, $result['databaseRow']['tx_ailabel_reviewed']);
     }
 }

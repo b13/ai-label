@@ -13,7 +13,7 @@ namespace B13\AiLabel\Event;
  */
 
 // Allows other extensions to add or remove tables that should not receive
-// the ai_origin field.
+// the tx_ailabel_origin field.
 final class ApplicableTablesEvent
 {
     public function __construct(private array $applicableTables)

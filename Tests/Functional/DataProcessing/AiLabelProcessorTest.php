@@ -37,7 +37,7 @@ final class AiLabelProcessorTest extends FunctionalTestCase
         $cObj = GeneralUtility::makeInstance(ContentObjectRenderer::class);
         $cObj->data = [
             'uid' => 1,
-            'ai_metadata' => '{"ai_origin":1,"reviewed_by":0,"reviewed_timestamp":0}',
+            'tx_ailabel_metadata' => '{"origin":1,"reviewed_by":0,"reviewed_timestamp":0}',
         ];
 
         $processedData = $this->get(AiLabelProcessor::class)->process($cObj, [], [], []);
@@ -51,7 +51,7 @@ final class AiLabelProcessorTest extends FunctionalTestCase
     public function unflaggedRecordYieldsUnflaggedMetadata(): void
     {
         $cObj = GeneralUtility::makeInstance(ContentObjectRenderer::class);
-        $cObj->data = ['uid' => 1, 'ai_metadata' => null];
+        $cObj->data = ['uid' => 1, 'tx_ailabel_metadata' => null];
 
         $processedData = $this->get(AiLabelProcessor::class)->process($cObj, [], [], []);
 
@@ -63,7 +63,7 @@ final class AiLabelProcessorTest extends FunctionalTestCase
     public function respectsCustomTargetVariableName(): void
     {
         $cObj = GeneralUtility::makeInstance(ContentObjectRenderer::class);
-        $cObj->data = ['uid' => 1, 'ai_metadata' => '{"ai_origin":2,"reviewed_by":0,"reviewed_timestamp":0}'];
+        $cObj->data = ['uid' => 1, 'tx_ailabel_metadata' => '{"origin":2,"reviewed_by":0,"reviewed_timestamp":0}'];
 
         $processedData = $this->get(AiLabelProcessor::class)->process($cObj, [], ['as' => 'myVar'], []);
 

@@ -18,13 +18,14 @@ use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-// VirtualSelectElement is the "ai_origin" TCA type=user/renderType=aiLabelVirtualSelect
-// counterpart to VirtualCheckboxElement - it delegates to core's SelectSingleElement
-// rendering. TcaSelectItems (the core provider that normally resolves 'items') only
-// runs for config.type === 'select', so it never touches our type=user field - this
-// proves the plain ['label' => ..., 'value' => ...] item shape AddAiMetaFieldsToTca
-// provides directly is exactly what SelectSingleElement::render() needs, with no
-// resolution step in between.
+// VirtualSelectElement is the "tx_ailabel_origin" TCA
+// type=user/renderType=aiLabelVirtualSelect counterpart to VirtualCheckboxElement -
+// it delegates to core's SelectSingleElement rendering. TcaSelectItems (the core
+// provider that normally resolves 'items') only runs for config.type === 'select', so
+// it never touches our type=user field - this proves the plain
+// ['label' => ..., 'value' => ...] item shape AddAiMetaFieldsToTca provides directly
+// is exactly what SelectSingleElement::render() needs, with no resolution step in
+// between.
 final class VirtualSelectElementTest extends FunctionalTestCase
 {
     protected array $coreExtensionsToLoad = [
@@ -49,20 +50,20 @@ final class VirtualSelectElementTest extends FunctionalTestCase
         $element = $this->get(VirtualSelectElement::class);
         $element->setData([
             'tableName' => 'tt_content',
-            'fieldName' => 'ai_origin',
+            'fieldName' => 'tx_ailabel_origin',
             'databaseRow' => ['uid' => 1],
-            'processedTca' => ['columns' => ['ai_origin' => $GLOBALS['TCA']['tt_content']['columns']['ai_origin']]],
+            'processedTca' => ['columns' => ['tx_ailabel_origin' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin']]],
             'parameterArray' => [
-                'fieldConf' => $GLOBALS['TCA']['tt_content']['columns']['ai_origin'],
+                'fieldConf' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin'],
                 'itemFormElValue' => 2,
-                'itemFormElName' => 'data[tt_content][1][ai_origin]',
+                'itemFormElName' => 'data[tt_content][1][tx_ailabel_origin]',
             ],
         ]);
 
         $result = $element->render();
 
         self::assertStringContainsString('<select', $result['html']);
-        self::assertStringContainsString('name="data[tt_content][1][ai_origin]"', $result['html']);
+        self::assertStringContainsString('name="data[tt_content][1][tx_ailabel_origin]"', $result['html']);
         self::assertMatchesRegularExpression('/<option value="2"[^>]*selected="selected"/', $result['html']);
         self::assertDoesNotMatchRegularExpression('/<option value="0"[^>]*selected="selected"/', $result['html']);
         self::assertDoesNotMatchRegularExpression('/<option value="1"[^>]*selected="selected"/', $result['html']);

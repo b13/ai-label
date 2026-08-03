@@ -7,5 +7,5 @@ sys_file
 ,1,0,1,/flagged.txt,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",txt,text/plain,flagged.txt,"cccccccccccccccccccccccccccccccccccccccc",0,2
 
 sys_file_metadata
-,uid,pid,file,ai_metadata
-,1,0,1,"{""ai_origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
+,uid,pid,file,tx_ailabel_metadata
+,1,0,1,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"

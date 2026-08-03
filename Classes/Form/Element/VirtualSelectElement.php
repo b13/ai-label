@@ -18,7 +18,7 @@ use TYPO3\CMS\Backend\Form\Element\SelectSingleElement;
 // VirtualCheckboxElement: DefaultTcaSchema only auto-creates a database column for
 // TCA type=select (StaticSelectFieldType), never for type=user, so this renders
 // exactly like a normal single select without ever gaining a real column.
-// AiMetaDataHandlerHook folds the submitted value into ai_metadata instead.
+// AiMetaDataHandlerHook folds the submitted value into tx_ailabel_metadata instead.
 //
 // Unlike type=select, TcaSelectItems (the core provider that normally resolves
 // 'items' into the shape SelectSingleElement expects) only runs for

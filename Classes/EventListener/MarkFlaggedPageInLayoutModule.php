@@ -60,8 +60,8 @@ final class MarkFlaggedPageInLayoutModule
         $returnUrl = (string)$request->getUri();
         $headerContent = '';
 
-        $row = BackendUtility::getRecord('pages', $pageId, 'ai_metadata');
-        $pageMetadata = AiMetadata::fromJsonString($row['ai_metadata'] ?? null);
+        $row = BackendUtility::getRecord('pages', $pageId, 'tx_ailabel_metadata');
+        $pageMetadata = AiMetadata::fromJsonString($row['tx_ailabel_metadata'] ?? null);
         if ($pageMetadata->isFlagged()) {
             $href = $this->buildEditUrl('pages', $pageId, $returnUrl);
             $headerContent .= '<div class="ai-label-page-marker">' . $this->badgeFactory->getBadge($pageMetadata, $href) . '</div>';

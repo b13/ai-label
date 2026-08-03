@@ -17,8 +17,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 
-// Exposes the current content element's ai_metadata as an AiMetadata object,
-// under a Fluid variable (default "aiMetadata"). No decision-making, no markup -
+// Exposes the current content element's tx_ailabel_metadata as an AiMetadata
+// object, under a Fluid variable (default "aiMetadata"). No decision-making, no markup -
 // just the same domain object AiMetaDataHandlerHook already works with, handed
 // through to the frontend template. Register via TypoScript:
 // dataProcessing.10 = B13\AiLabel\DataProcessing\AiLabelProcessor
@@ -34,7 +34,7 @@ final class AiLabelProcessor implements DataProcessorInterface
     ): array {
         $targetVariableName = $cObj->stdWrapValue('as', $processorConfiguration, 'aiMetadata');
         $record = $processedData['data'] ?? $cObj->data;
-        $processedData[$targetVariableName] = AiMetadata::fromJsonString($record['ai_metadata'] ?? null);
+        $processedData[$targetVariableName] = AiMetadata::fromJsonString($record['tx_ailabel_metadata'] ?? null);
 
         return $processedData;
     }

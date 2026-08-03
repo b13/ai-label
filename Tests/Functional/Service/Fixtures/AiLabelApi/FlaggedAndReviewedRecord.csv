@@ -1,3 +1,3 @@
 tt_content
-,uid,pid,header,CType,ai_metadata
-,1,1,Some content,text,"{""ai_origin"":1,""reviewed_by"":1,""reviewed_timestamp"":1400000000}"
+,uid,pid,header,CType,tx_ailabel_metadata
+,1,1,Some content,text,"{""origin"":1,""reviewed_by"":1,""reviewed_timestamp"":1400000000}"

@@ -11,13 +11,16 @@ overview module listing every flagged record.
 
 ## What it does
 
-- Adds an `ai_origin` select (`No AI involvement` / `AI created` / `AI modified`,
-  exclusive - a record is never both) plus a `reviewed` checkbox to every
-  applicable table (`tt_content`, `pages`, `sys_file_metadata` by default -
-  extensible via `ApplicableTablesEvent`).
-- State is stored in a single `ai_metadata` JSON column added directly to each
-  applicable table's schema - no separate table, no TCA-visible real columns
-  for the select/checkbox themselves.
+- Adds a `tx_ailabel_origin` select (`No AI involvement` / `AI created` / `AI
+  modified`, exclusive - a record is never both) plus a `tx_ailabel_reviewed`
+  checkbox to every applicable table (`tt_content`, `pages`, `sys_file_metadata`
+  by default - extensible via `ApplicableTablesEvent`). Field names are prefixed
+  to avoid colliding with a same-named field from another extension.
+- State is stored in a single `tx_ailabel_metadata` JSON column added directly
+  to each applicable table's schema - no separate table, no TCA-visible real
+  columns for the select/checkbox themselves. Internally the JSON keys stay
+  short (`origin`, `reviewed_by`, `reviewed_timestamp`) since that column is
+  private to this extension.
 - As long as a record is flagged, changing its content resets the review
   state, so an editor has to review it again - unless the same save also
   (re-)ticks "reviewed".
@@ -68,8 +71,8 @@ What this does for you:
 - **`aiRemoved()` clears the flag entirely** - origin back to "no AI
   involvement", not just a boolean toggled off.
 - **Throws `\InvalidArgumentException`** if `$table` isn't one of the applicable
-  tables (see below) - this API never silently writes `ai_metadata` onto a table
-  that was never set up to carry it.
+  tables (see below) - this API never silently writes `tx_ailabel_metadata` onto
+  a table that was never set up to carry it.
 
 `aiMetadataUpdate()` is the lower-level method the three convenience methods
 above are built on; use it directly if you've already computed the full
@@ -79,8 +82,8 @@ above are built on; use it directly if you've already computed the full
 ### Registering your own tables
 
 By default, `tt_content`, `pages` and `sys_file_metadata` are applicable (get
-the `ai_origin`/`reviewed` fields, the `ai_metadata` column, and can be used
-with `AiLabelApi`). To add your own table, listen to
+the `tx_ailabel_origin`/`tx_ailabel_reviewed` fields, the `tx_ailabel_metadata`
+column, and can be used with `AiLabelApi`). To add your own table, listen to
 `B13\AiLabel\Event\ApplicableTablesEvent`:
 
 ```php
@@ -165,7 +168,7 @@ up a DataProcessor isn't practical):
 
 ### Files / images: ViewHelper
 
-`<ailabel:fileMetadata>` does the same for a FAL file reference (`ai_metadata`
+`<ailabel:fileMetadata>` does the same for a FAL file reference (`tx_ailabel_metadata`
 lives on `sys_file_metadata`, not on the file reference itself):
 
 ```html

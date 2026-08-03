@@ -36,7 +36,7 @@ final class RecordMetadataViewHelperTest extends FunctionalTestCase
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
         ));
         $view->assign('record', [
-            'ai_metadata' => '{"ai_origin":1,"reviewed_by":5,"reviewed_timestamp":1440000000}',
+            'tx_ailabel_metadata' => '{"origin":1,"reviewed_by":5,"reviewed_timestamp":1440000000}',
         ]);
 
         self::assertSame('1||5|1440000000', trim($view->render('RecordMetadata')));
@@ -48,7 +48,7 @@ final class RecordMetadataViewHelperTest extends FunctionalTestCase
         $view = $this->get(ViewFactoryInterface::class)->create(new ViewFactoryData(
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
         ));
-        $view->assign('record', ['ai_metadata' => null]);
+        $view->assign('record', ['tx_ailabel_metadata' => null]);
 
         self::assertSame('||0|0', trim($view->render('RecordMetadata')));
     }
@@ -60,7 +60,7 @@ final class RecordMetadataViewHelperTest extends FunctionalTestCase
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
         ));
         $view->assign('record', [
-            'ai_metadata' => '{"ai_origin":2,"reviewed_by":0,"reviewed_timestamp":0}',
+            'tx_ailabel_metadata' => '{"origin":2,"reviewed_by":0,"reviewed_timestamp":0}',
         ]);
 
         self::assertSame('|1|0|0', trim($view->render('RecordMetadataInline')));

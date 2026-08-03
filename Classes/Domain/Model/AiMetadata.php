@@ -14,17 +14,20 @@ namespace B13\AiLabel\Domain\Model;
 
 use B13\AiLabel\Domain\Enum\AiOrigin;
 
-// Immutable value object for the ai_metadata JSON column - not an Extbase entity,
-// there is no repository/persistence for this, DataHandler writes the column
-// directly (see AiMetaDataHandlerHook).
+// Immutable value object for the tx_ailabel_metadata JSON column - not an Extbase
+// entity, there is no repository/persistence for this, DataHandler writes the column
+// directly (see AiMetaDataHandlerHook). The JSON keys themselves (origin,
+// reviewed_by, reviewed_timestamp) stay short/unprefixed - unlike the TCA field
+// names, this column is entirely private to this extension, so there's no
+// cross-extension collision risk to guard against here.
 //
 // A record's AI origin is exclusive - it's either untouched by AI, AI-generated,
 // or AI-modified, never more than one at once. That's why this wraps a single
 // AiOrigin enum rather than two independent aiCreated/aiModified booleans.
 //
-// ai_metadata is a real TCA type=json column, so depending on where a caller got
-// its data from, it's either a raw JSON string (e.g. a plain QueryBuilder fetch)
-// or an already-decoded array (e.g. FormEngine's DatabaseEditRow, which runs
+// tx_ailabel_metadata is a real TCA type=json column, so depending on where a
+// caller got its data from, it's either a raw JSON string (e.g. a plain QueryBuilder
+// fetch) or an already-decoded array (e.g. FormEngine's DatabaseEditRow, which runs
 // BackendUtility::convertDatabaseRowValuesToPhp() on type=json columns). Callers
 // know which one they have - use fromJsonString()/fromArray() accordingly, or
 // plain `new self()` if there's no stored value at all yet.
@@ -50,7 +53,7 @@ final class AiMetadata
             return $metadata;
         }
 
-        $metadata->origin = AiOrigin::tryFrom((int)($data['ai_origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
+        $metadata->origin = AiOrigin::tryFrom((int)($data['origin'] ?? AiOrigin::Human->value)) ?? AiOrigin::Human;
         $metadata->reviewedBy = (int)($data['reviewed_by'] ?? 0);
         $metadata->reviewedTimestamp = (int)($data['reviewed_timestamp'] ?? 0);
         return $metadata;
@@ -113,13 +116,13 @@ final class AiMetadata
     }
 
     /**
-     * The value to assign to DataHandler's $fieldArray['ai_metadata'] - a plain
-     * array, DataHandler/Doctrine encode it themselves for the json column.
+     * The value to assign to DataHandler's $fieldArray['tx_ailabel_metadata'] - a
+     * plain array, DataHandler/Doctrine encode it themselves for the json column.
      */
     public function toArray(): array
     {
         return [
-            'ai_origin' => $this->origin->value,
+            'origin' => $this->origin->value,
             'reviewed_by' => $this->reviewedBy,
             'reviewed_timestamp' => $this->reviewedTimestamp,
         ];

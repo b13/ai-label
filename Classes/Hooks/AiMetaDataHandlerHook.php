@@ -36,11 +36,13 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 // untouched) does NOT count as "reviewed wins" - content changing after a record
 // was already reviewed must still reset it.
 //
-// For updates to an existing record, the actual persisting goes through
-// AiLabelApi::aiMetadataUpdate() instead of writing $fieldArray directly - see
-// that class for why (permissions, sys_history). New records can't go through it
-// (the row doesn't exist yet at this point, see below), so that one case still
-// writes $fieldArray directly, unchanged from before.
+// processDatamap_postProcessFieldArray() dispatches on $status into two separate
+// methods, since the two cases barely overlap: processUpdatedRecord() persists
+// through AiLabelApi::aiMetadataUpdate() (see that class for why - permissions,
+// sys_history) and has to reconcile the incoming value against whatever is already
+// stored (the review-reset/"reviewed wins" logic above). processNewRecord() has no
+// existing row to fetch or reconcile against and can't go through AiLabelApi (the
+// row doesn't exist yet to target), so it just writes $fieldArray directly.
 #[Autoconfigure(public: true)]
 final class AiMetaDataHandlerHook
 {
@@ -101,9 +103,38 @@ final class AiMetaDataHandlerHook
         $pendingAiMetadata = $this->pendingValues[$key];
         unset($this->pendingValues[$key]);
 
-        $existingAiMetadata = $status === 'update'
-            ? AiMetadata::fromJsonString(BackendUtility::getRecord($table, (int)$id, 'tx_ailabel_metadata')['tx_ailabel_metadata'] ?? null)
-            : new AiMetadata();
+        // New records can't go through AiLabelApi (the row doesn't exist yet to
+        // target), and never have an existing/previously-reviewed state to reconcile
+        // with - see processNewRecord(). Everything else (the review-reset/"reviewed
+        // wins" logic) only makes sense for an update, see processUpdatedRecord().
+        if ($status !== 'update') {
+            $this->processNewRecord($pendingAiMetadata, $fieldArray, $dataHandler);
+            return;
+        }
+
+        $this->processUpdatedRecord($pendingAiMetadata, $table, (int)$id, $fieldArray, $dataHandler);
+    }
+
+    private function processNewRecord(AiMetadata $pendingAiMetadata, array &$fieldArray, DataHandler $dataHandler): void
+    {
+        if (!$pendingAiMetadata->isFlagged()) {
+            // Nothing to persist - leaves tx_ailabel_metadata at its TCA default (null).
+            return;
+        }
+
+        $isReviewed = $pendingAiMetadata->isReviewed();
+        $finalAiMetadata = $pendingAiMetadata
+            ->withReviewedBy($isReviewed ? (int)($dataHandler->BE_USER->user['uid'] ?? 0) : 0)
+            ->withReviewedTimestamp($isReviewed ? (int)$this->context->getPropertyFromAspect('date', 'timestamp') : 0);
+
+        // DataHandler/Doctrine already JSON-encode values written to a json-typed
+        // column - passing an already-encoded string here would double-encode it.
+        $fieldArray['tx_ailabel_metadata'] = $finalAiMetadata->toArray();
+    }
+
+    private function processUpdatedRecord(AiMetadata $pendingAiMetadata, string $table, int $id, array $fieldArray, DataHandler $dataHandler): void
+    {
+        $existingAiMetadata = AiMetadata::fromJsonString(BackendUtility::getRecord($table, $id, 'tx_ailabel_metadata')['tx_ailabel_metadata'] ?? null);
 
         if (!$pendingAiMetadata->isFlagged() && !$existingAiMetadata->isFlagged() && !$existingAiMetadata->isReviewed()) {
             // Never flagged, and nothing stored yet - nothing to persist.
@@ -112,18 +143,9 @@ final class AiMetaDataHandlerHook
 
         if (!$pendingAiMetadata->isFlagged()) {
             // Unflagged now: nothing worth tracking anymore.
-            if ($status === 'update') {
-                $this->aiLabelApi->aiMetadataUpdate($table, (int)$id, null, $dataHandler->BE_USER);
-            } else {
-                // New records: see the class docblock - AiLabelApi can't target a row
-                // that doesn't exist yet, so this one case still writes $fieldArray
-                // directly, same as before.
-                $fieldArray['tx_ailabel_metadata'] = null;
-            }
+            $this->aiLabelApi->aiMetadataUpdate($table, $id, null, $dataHandler->BE_USER);
             return;
         }
-
-        $beUserId = (int)($dataHandler->BE_USER->user['uid'] ?? 0);
 
         // "reviewed wins" only applies if the editor actively ticked reviewed in this
         // very save (0/none -> 1). If it was already reviewed and simply stayed reviewed
@@ -135,9 +157,10 @@ final class AiMetaDataHandlerHook
         // Content changing on an already-reviewed, still-flagged record means review
         // is needed again - reset reviewed_by, unless this same save also (re-)ticks it.
         // $pendingAiMetadata->isFlagged() is already guaranteed true here (see the early return above).
-        $contentChanged = $status === 'update' && $this->hasRelevantContentChange($table, $fieldArray);
+        $contentChanged = $this->hasRelevantContentChange($table, $fieldArray);
         $needsReviewReset = $contentChanged && $existingAiMetadata->isReviewed() && !$reviewedJustTicked;
 
+        $beUserId = (int)($dataHandler->BE_USER->user['uid'] ?? 0);
         $reviewedBy = $needsReviewReset ? 0 : ($pendingAiMetadata->isReviewed() ? $beUserId : 0);
 
         // reviewed_timestamp only moves when reviewed actually flips from unreviewed
@@ -149,19 +172,11 @@ final class AiMetaDataHandlerHook
             default => $existingAiMetadata->getReviewedTimestamp(),
         };
 
-        $finalAiMetadata = (new AiMetadata())
-            ->withOrigin($pendingAiMetadata->getOrigin())
+        $finalAiMetadata = $pendingAiMetadata
             ->withReviewedBy($reviewedBy)
             ->withReviewedTimestamp($reviewedTimestamp);
 
-        if ($status === 'update') {
-            $this->aiLabelApi->aiMetadataUpdate($table, (int)$id, $finalAiMetadata, $dataHandler->BE_USER);
-        } else {
-            // New records: see the class docblock. DataHandler/Doctrine already
-            // JSON-encode values written to a json-typed column - passing an
-            // already-encoded string here would double-encode it.
-            $fieldArray['tx_ailabel_metadata'] = $finalAiMetadata->toArray();
-        }
+        $this->aiLabelApi->aiMetadataUpdate($table, $id, $finalAiMetadata, $dataHandler->BE_USER);
     }
 
     /**

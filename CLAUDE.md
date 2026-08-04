@@ -48,7 +48,10 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   `isAiModified()` are read-only derived accessors over `getOrigin()` - kept for a stable
   public API (README, Fluid templates) even though the mutator side collapsed to a single
   `withOrigin(AiOrigin)`. Always go through this object - don't hand-roll JSON decode/encode
-  elsewhere.
+  elsewhere. `Services.yaml` explicitly excludes `Classes/Domain/Model/*` and
+  `Classes/Domain/Enum/*` from the `resource: '../Classes/*'` autowiring scan - `AiMetadata`/
+  `AiOrigin` are plain value objects with no business belonging in the DI container, never
+  constructor-injected or `makeInstance()`'d as a service anywhere.
 - Unflagged records store `tx_ailabel_metadata = NULL` (not all-zero JSON), so
   `AiMetadataRecordFinder`'s `WHERE tx_ailabel_metadata IS NOT NULL` stays a cheap,
   accurate filter. Exception: writes through `AiLabelApi`/`DataHandler` always end up as
@@ -86,9 +89,15 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
   Context's date aspect (it lazily caches on first access).
 - This hook is instantiated by DataHandler's legacy `processDatamapClass` mechanism
   (`GeneralUtility::makeInstance()`, not full DI) - it needs `#[Autoconfigure(public: true)]`
-  or autowiring silently fails to inject its dependencies. Same applies to DataProcessors
-  and Fluid ViewHelpers (`TYPO3\CMS\Frontend\...\ContentDataProcessor` and Fluid's
-  `ViewHelperResolver` both instantiate via `GeneralUtility::makeInstance()` too).
+  or autowiring silently fails to inject its dependencies (`Context`, `TcaSchemaFactory`,
+  `AiLabelApi`). **The rule only bites when there's actually a constructor to autowire**:
+  `AiLabelProcessor`/`RecordMetadataViewHelper`/`FileMetadataViewHelper` are also
+  instantiated the same way (Fluid's `ViewHelperResolver`/TYPO3 Frontend's
+  `ContentDataProcessor`, both via plain `GeneralUtility::makeInstance()`), but none of
+  the three has a constructor at all - nothing to inject, so the attribute was
+  never needed there and was removed. Don't add it defensively by analogy; check first
+  whether the class being `makeInstance()`'d from outside the object graph actually has
+  constructor dependencies.
 
 ## Gotchas
 
@@ -143,6 +152,10 @@ Known version-safe APIs (confirmed identical on v13.4 and v14, no split needed):
 
 ## Backend UI
 
+- The overview module (`Configuration/Backend/Modules.php`) sets
+  `'inheritNavigationComponentFromMainModule' => false` - it's not page-tree-scoped
+  (lists flagged records across the whole site), so it shouldn't show the Web module's
+  page tree in the navigation component.
 - `AiMetadataBadgeFactory::getBadge()` is the single source of truth for label/color
   (`ReviewStatus` value object) - used by the record list/file list dropdowns, the layout
   module badges, the form legend (`VirtualCheckboxElement`), and the overview module.
@@ -228,11 +241,13 @@ don't exist. If asked to extend the frontend integration further, keep following
 "just pass the object through" principle and don't reach back into wiki.txt for more
 unless explicitly told to.
 
-Both ViewHelpers return the `AiMetadata` object directly when used inline
-(`{ailabel:recordMetadata(record: data)}`), but return `''` when the optional `as`
-argument is used to assign a variable directly (same convention as `f:variable` - a
-standalone tag's return value gets string-cast into the output stream, and `AiMetadata`
-has no `__toString()`, so it must not "leak" that way).
+Both ViewHelpers (`render(): ?AiMetadata`) return the `AiMetadata` object directly when
+used inline (`{ailabel:recordMetadata(record: data)}`), but return `null` when the
+optional `as` argument is used to assign a variable directly (same convention as
+`f:variable` - a standalone tag's return value gets string-cast into the output stream,
+and `AiMetadata` has no `__toString()`, so it must not "leak" that way; `null` casts to
+`''` same as an explicit empty string would, so this is behaviorally identical to the
+original `string|AiMetadata`/`return ''` signature, just a more honest type).
 
 ## Optional dependencies
 
@@ -260,6 +275,18 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   ```
   php -d memory_limit=2G .Build/bin/phpunit -c Build/phpunit/FunctionalTests.xml Tests/Functional
   php -d memory_limit=2G .Build/bin/phpstan analyse -c Build/phpstan.neon
+  ```
+- **CI (`.github/workflows/ci.yml`) runs the matrix against both TYPO3 versions**, and
+  phpstan needs a *second*, separate config for v13: `Build/phpstan13.neon` (level 5,
+  same `Classes` path) plus `Build/phpstan13-baseline.neon` - the baseline exists because
+  `Classes/Legacy/*`'s early-return guard (`if ($typo3Version->getMajorVersion() < 14) return;`)
+  doesn't stop phpstan from statically analyzing the *v14* classes' references to
+  v14-only core APIs (`ComponentFactory`, `ProcessFileListActionsEvent::getRequest()`/
+  `setAction()`, etc.) that genuinely don't exist when `composer require typo3/cms-backend:^13.4`
+  is installed - `Build/phpstan.neon`'s exclusion of `Classes/Legacy/` only handles the
+  reverse case. Run both locally when touching anything version-split:
+  ```
+  php -d memory_limit=2G .Build/bin/phpstan analyse -c Build/phpstan13.neon
   ```
 - **CSV fixture format is easy to get wrong**: the table name must be on its own line
   (first column only), *then* a separate line with a leading empty column + field names,
@@ -323,7 +350,12 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   must be present too (real TCA config, e.g.
   `$GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin']`) even though the test
   itself never touches TCA directly - a missing `processedTca` key triggers PHP warnings,
-  not a hard failure, so it's easy to miss.
+  not a hard failure, so it's easy to miss. `'inlineStructure' => []` is needed too -
+  `SelectSingleElement::render()`'s inline-uniqueness check reads
+  `$this->data['inlineStructure']` via `InlineStackProcessor`, and while it's guarded by
+  `$this->data['isInlineChild'] ?? false` being falsy first, an entirely missing array
+  key still surfaces as a warning on some PHP/TYPO3 patch combinations - same
+  "easy to miss, only a warning" trap as `processedTca`.
 - Testing backend-vs-frontend-vs-CLI branching (`AfterFileContentChangedListenerTest`): build
   `(new TYPO3\CMS\Core\Http\ServerRequest())->withAttribute('applicationType',
   SystemEnvironmentBuilder::REQUESTTYPE_BE)` (or `REQUESTTYPE_FE`) and assign it to

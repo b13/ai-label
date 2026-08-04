@@ -42,6 +42,7 @@ final class MarkFlaggedRecordsInRecordList
     public function __invoke(ModifyRecordListRecordActionsEvent $event): void
     {
         if ($this->typo3Version->getMajorVersion() < 14) {
+            // legacy EventListener is used
             return;
         }
 

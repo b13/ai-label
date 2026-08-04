@@ -13,7 +13,6 @@ namespace B13\AiLabel\ViewHelpers;
  */
 
 use B13\AiLabel\Domain\Model\AiMetadata;
-use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
 /**
@@ -33,7 +32,6 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  *    <ailabel:recordMetadata record="{data}" as="aiMetadata" />
  * ```
  */
-#[Autoconfigure(public: true)]
 final class RecordMetadataViewHelper extends AbstractViewHelper
 {
     public function initializeArguments(): void
@@ -42,17 +40,13 @@ final class RecordMetadataViewHelper extends AbstractViewHelper
         $this->registerArgument('as', 'string', 'Optional: variable name to assign the AiMetadata object to');
     }
 
-    public function render(): string|AiMetadata
+    public function render(): ?AiMetadata
     {
         $metadata = AiMetadata::fromJsonString($this->arguments['record']['tx_ailabel_metadata'] ?? null);
 
         if ($this->arguments['as'] !== null) {
-            // Same convention as f:variable: assign as a side effect and render
-            // nothing - used as a standalone tag, the object itself must not end up
-            // in the output stream (it would be string-cast and AiMetadata has no
-            // __toString()).
             $this->renderingContext->getVariableProvider()->add($this->arguments['as'], $metadata);
-            return '';
+            return null;
         }
 
         return $metadata;

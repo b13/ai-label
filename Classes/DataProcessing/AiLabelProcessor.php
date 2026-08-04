@@ -13,7 +13,6 @@ namespace B13\AiLabel\DataProcessing;
  */
 
 use B13\AiLabel\Domain\Model\AiMetadata;
-use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 
@@ -23,7 +22,6 @@ use TYPO3\CMS\Frontend\ContentObject\DataProcessorInterface;
 // through to the frontend template. Register via TypoScript:
 // dataProcessing.10 = B13\AiLabel\DataProcessing\AiLabelProcessor
 // (or the short alias "ai-label", see Configuration/Services.yaml).
-#[Autoconfigure(public: true)]
 final class AiLabelProcessor implements DataProcessorInterface
 {
     public function process(

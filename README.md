@@ -29,6 +29,12 @@ overview module listing every flagged record.
   its content elements).
 - Backend module "AI Label" (Web menu) lists every currently flagged record,
   workspace-aware.
+- Changing a flagged file's actual content (replacing it, or overwriting its
+  contents directly) shows a flash message in the backend reminding the editor
+  to double-check whether the stored AI origin is still correct - the origin
+  itself isn't touched automatically. If the file had already been reviewed,
+  that review is reset (back to "review required"), the same way changing a
+  flagged content element's/page's content does.
 
 ## Public API for other extensions
 

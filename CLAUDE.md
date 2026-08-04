@@ -171,6 +171,47 @@ Known version-safe APIs (confirmed identical on v13.4 and v14, no split needed):
   legend badge (`VirtualCheckboxElement`) and `AiMetadataRecordFinder`'s own `reviewBadge`
   field are unlinked (`getBadge($metadata)` without `$href`) - callers that need a link
   rebuild the badge themselves with `getBadge($metadata, $href)`.
+- `AfterFileContentChangedListener` (from wiki.txt, explicitly requested - same
+  one-piece-at-a-time adoption as `AiOrigin`, see "Frontend integration") listens to
+  both `AfterFileReplacedEvent` and `AfterFileContentsSetEvent` (same shared handler
+  for both, matching core's own `FlushCacheTagForFile` precedent for this exact event
+  pair) - a flagged file's origin was set for its *previous* content, so this: (1) adds
+  a flash message nudging the editor to re-check the origin classification (it never
+  touches the origin itself), and (2) resets an already-reviewed file back to "review
+  required", the same rule `AiMetaDataHandlerHook` applies to tt_content/pages content
+  changes - except there's no concurrent form submission here, so no "reviewed wins"
+  case to reconcile. The reset goes through `AiLabelApi::aiMetadataUpdate()`, same as
+  everywhere else (permissions, sys_history). Other FAL events were deliberately not
+  hooked into: `AfterFileAddedEvent` is a brand new upload (nothing stored yet to be
+  stale), `AfterFileCopiedEvent`/`AfterFileMovedEvent`/`AfterFileRenamedEvent` don't
+  change the file's actual content, and `AfterFileMetaData*Event` fire for
+  tx_ailabel_metadata's own CRUD, not the file's content changing.
+  The review reset itself always happens regardless of context - only the flash
+  message is backend-only, guarded with
+  `ApplicationType::fromRequest($GLOBALS['TYPO3_REQUEST'])->isBackend()` (neither event
+  carries a request otherwise), since a CLI (e.g. scheduler task) or frontend-triggered
+  change has no editor to show a notice to. The message text/title are proper LLL:
+  labels (`notice.fileContentChanged`/`notice.fileContentChanged.title` in
+  `locallang_db.xlf`), resolved via `LanguageService::sL()` (`$GLOBALS['LANG']`, same
+  pattern as `AiMetadataBadgeFactory`).
+  **Must use `FlashMessageQueue::NOTIFICATION_QUEUE`, not the default queue.** The
+  Filelist "replace file" action is an AJAX endpoint
+  (`EXT:backend`'s `ResourceController::replaceResourceAction()`) - right after
+  dispatching `AfterFileReplacedEvent`, that same method drains the *default* flash
+  message queue (`getMessageQueueByIdentifier()` with no identifier -
+  `FlashMessageQueue::FLASHMESSAGE_QUEUE`) and repackages everything it finds there
+  into one new message of its own (`implode("\n", ...)` over all queued messages),
+  titled from its own `ajax.success` label and defaulting to `ContextualFeedbackSeverity::OK`.
+  A message enqueued into the default queue there gets glued onto core's own "File X
+  was replaced with Y" text as plain text and loses its own title/severity entirely -
+  this is exactly what happened before this fix (confirmed by the user's bug report).
+  `NOTIFICATION_QUEUE` is a separate queue that controller action never touches;
+  `ModuleTemplate::dispatchNotificationMessages()` renders it as its own toast
+  (`@typo3/backend/notification.js`) on the next full backend page render, title/
+  severity intact. Tests must read flash messages back from
+  `getMessageQueueByIdentifier(FlashMessageQueue::NOTIFICATION_QUEUE)`, not the
+  default identifier, or `getAllMessagesAndFlush()` on the wrong queue always
+  returns empty.
 
 ## Frontend integration
 
@@ -283,6 +324,17 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
   `$GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin']`) even though the test
   itself never touches TCA directly - a missing `processedTca` key triggers PHP warnings,
   not a hard failure, so it's easy to miss.
+- Testing backend-vs-frontend-vs-CLI branching (`AfterFileContentChangedListenerTest`): build
+  `(new TYPO3\CMS\Core\Http\ServerRequest())->withAttribute('applicationType',
+  SystemEnvironmentBuilder::REQUESTTYPE_BE)` (or `REQUESTTYPE_FE`) and assign it to
+  `$GLOBALS['TYPO3_REQUEST']` - `ApplicationType::fromRequest()` reads that one request
+  attribute, nothing else. Assert flash messages via
+  `$this->get(FlashMessageService::class)->getMessageQueueByIdentifier()->getAllMessagesAndFlush()`
+  (also clears the queue, so each test starts clean without needing its own `setUp()`
+  reset). `ResourceFactory::getFileObject()` needs `$GLOBALS['BE_USER']` set (storage
+  permission checks in `StorageRepository`) - a request alone isn't enough, unlike
+  `new FileReference([...])` used elsewhere (see `FileMetadataViewHelperTest`), which
+  never touches `StorageRepository`.
 
 ## Coding conventions
 

@@ -1,3 +1,3 @@
 tt_content
-,uid,pid,header,tx_ailabel_metadata
-,1,1,Updated content,"{""origin"": 1, ""reviewed_by"": 1, ""reviewed_timestamp"": 1440000000}"
+,uid,tx_ailabel_metadata
+,1,"{""origin"": 1, ""reviewed_by"": 1, ""reviewed_timestamp"": 1440000000}"

@@ -1,3 +1,3 @@
 tt_content
-,uid,pid,tstamp,header,CType,tx_ailabel_metadata
-,1,1,1400000000,Some content,text,\NULL
+,uid,pid,tx_ailabel_metadata
+,1,1,\NULL

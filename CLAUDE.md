@@ -223,16 +223,25 @@ can be require-dev) or an `implements`/`extends`/eagerly-instantiated dependency
 - **CSV fixture format is easy to get wrong**: the table name must be on its own line
   (first column only), *then* a separate line with a leading empty column + field names,
   *then* data rows (leading empty column). Table name + field names on the same line
-  (e.g. `tt_content,uid,pid,header`) parses "successfully" but silently produces zero
-  imported rows and a barely-related PHP warning deep in `DataSet.php` - this bit us once,
-  see `git log` around the CSV-format fix. Reference format:
+  (e.g. `tt_content,uid,pid,tx_ailabel_metadata`) parses "successfully" but silently
+  produces zero imported rows and a barely-related PHP warning deep in `DataSet.php` -
+  this bit us once, see `git log` around the CSV-format fix. Reference format:
   ```
   tt_content
-  ,uid,pid,header,tx_ailabel_metadata
-  ,1,1,Some content,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
+  ,uid,pid,tx_ailabel_metadata
+  ,1,1,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
   ```
   `\NULL` (backslash prefix) is the special literal for SQL NULL - bare `NULL` is a
   4-character string literal.
+- **Keep fixture CSVs down to only the columns a test actually needs.** Input fixtures
+  (`importCSVDataSet()`) only need enough to satisfy real DB constraints (e.g. `pid`)
+  plus whatever starting state the test cares about (`tx_ailabel_metadata`) - our test
+  backend user is always admin, so page/table permission fields (`perms_*` on `pages`,
+  etc.) are never actually checked and can be dropped. Result fixtures
+  (`assertCSVDataSet()`) only need `uid` (to match the row) plus the column(s) the test
+  is actually verifying - columns like `header`/`CType`/`tstamp` that the operation also
+  touches don't need to be asserted just because DataHandler happened to write them,
+  unless the test is specifically about that column.
 - Comparing a JSON column's value via `assertCSVDataSet()` compares the *raw DB string*,
   not a decoded structure - MySQL's `JSON` column type normalizes stored text with a
   space after `:` and `,` when read back (`{"a": 1, "b": 2}`, not `{"a":1,"b":2}`). Write

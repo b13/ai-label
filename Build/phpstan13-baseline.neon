@@ -1,0 +1,79 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to constant primary on an unknown class TYPO3\\CMS\\Backend\\Template\\Components\\ActionGroup\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedFilesInFileList.php
+
+		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Filelist\\Event\\ProcessFileListActionsEvent\:\:getRequest\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedFilesInFileList.php
+
+		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Filelist\\Event\\ProcessFileListActionsEvent\:\:setAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedFilesInFileList.php
+
+		-
+			message: '#^Access to constant primary on an unknown class TYPO3\\CMS\\Backend\\Template\\Components\\ActionGroup\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Backend\\RecordList\\Event\\ModifyRecordListRecordActionsEvent\:\:getRequest\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Cannot call method getMainType\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Cannot call method getRawRecord\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Cannot call method getUid\(\) on array\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Parameter \#1 \$action of method TYPO3\\CMS\\Backend\\RecordList\\Event\\ModifyRecordListRecordActionsEvent\:\:setAction\(\) expects string, TYPO3\\CMS\\Backend\\Template\\Components\\Buttons\\DropDownButton given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../Classes/EventListener/MarkFlaggedRecordsInRecordList.php
+
+		-
+			message: '#^Call to method createDropDownButton\(\) on an unknown class TYPO3\\CMS\\Backend\\Template\\Components\\ComponentFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/Service/AiMetadataBadgeFactory.php
+
+		-
+			message: '#^Call to method createDropDownHeader\(\) on an unknown class TYPO3\\CMS\\Backend\\Template\\Components\\ComponentFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/Service/AiMetadataBadgeFactory.php
+
+		-
+			message: '#^Call to method createDropDownItem\(\) on an unknown class TYPO3\\CMS\\Backend\\Template\\Components\\ComponentFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/Service/AiMetadataBadgeFactory.php
+
+		-
+			message: '#^Class TYPO3\\CMS\\Backend\\Template\\Components\\ComponentFactory not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: ../Classes/Service/AiMetadataBadgeFactory.php

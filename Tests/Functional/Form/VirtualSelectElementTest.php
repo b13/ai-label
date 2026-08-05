@@ -52,6 +52,7 @@ final class VirtualSelectElementTest extends FunctionalTestCase
             'tableName' => 'tt_content',
             'fieldName' => 'tx_ailabel_origin',
             'databaseRow' => ['uid' => 1],
+            'inlineStructure' => [],
             'processedTca' => ['columns' => ['tx_ailabel_origin' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin']]],
             'parameterArray' => [
                 'fieldConf' => $GLOBALS['TCA']['tt_content']['columns']['tx_ailabel_origin'],

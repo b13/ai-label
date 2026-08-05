@@ -194,3 +194,9 @@ lives on `sys_file_metadata`, not on the file reference itself):
 Both ViewHelpers render nothing themselves when used with `as` - they only
 assign the variable. Without `as`, they return the `AiMetadata` object
 directly, so they can be used inline as shown above.
+
+## Credits
+
+This extension was created by Achim Fritz in 2026 for [b13 GmbH, Stuttgart](https://b13.com).
+
+[Find more TYPO3 extensions we have developed](https://b13.com/useful-typo3-extensions-from-b13-to-you) that help us deliver value in client projects. As part of our work, we focus on testing and best practices to ensure long-term performance, reliability, and results in all our code.

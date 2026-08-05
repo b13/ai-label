@@ -43,6 +43,7 @@ final class MarkFlaggedFilesInFileList
     public function __invoke(ProcessFileListActionsEvent $event): void
     {
         if ($this->typo3Version->getMajorVersion() < 14) {
+            // legacy EventListener is used
             return;
         }
 

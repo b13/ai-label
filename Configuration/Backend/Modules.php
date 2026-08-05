@@ -14,6 +14,7 @@ return [
         'iconIdentifier' => 'module-ailabel',
         'path' => '/module/web/ai-label-overview',
         'labels' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf',
+        'inheritNavigationComponentFromMainModule' => false,
         'routes' => [
             '_default' => [
                 'target' => AiLabelOverviewController::class . '::handleRequest',

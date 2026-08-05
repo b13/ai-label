@@ -6,6 +6,9 @@ services:
 
   B13\AiLabel\:
     resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+      - '../Classes/Domain/Enum/*'
 
   B13\AiLabel\DataProcessing\AiLabelProcessor:
     tags:

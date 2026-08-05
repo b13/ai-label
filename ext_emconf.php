@@ -2,13 +2,13 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'AI Label',
-    'description' => 'Adds AI-created / AI-modified checkboxes to every backend-editable record and stores them in a dedicated table.',
+    'description' => 'Flags backend records as AI-created / AI-modified.',
     'category' => 'be',
     'author' => 'b13 GmbH',
     'author_email' => 'typo3@b13.com',
     'author_company' => 'b13 GmbH',
     'state' => 'stable',
-    'version' => '1.0.0',
+    'version' => '0.0.1',
     'constraints' => [
         'depends' => [
             'typo3' => '13.4.0-14.99.99',

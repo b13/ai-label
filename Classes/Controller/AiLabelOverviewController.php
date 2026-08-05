@@ -28,6 +28,7 @@ use TYPO3\CMS\Core\Pagination\SlidingWindowPagination;
 final class AiLabelOverviewController
 {
     private const ITEMS_PER_PAGE = 25;
+    private const MAX_NUMBER_OF_LINKS = 7;
     private const MODULE_IDENTIFIER = 'web_ai_label_overview';
 
     public function __construct(
@@ -54,7 +55,7 @@ final class AiLabelOverviewController
         );
 
         $paginator = new ArrayPaginator($records, $currentPageNumber, self::ITEMS_PER_PAGE);
-        $pagination = new SlidingWindowPagination($paginator, 7);
+        $pagination = new SlidingWindowPagination($paginator, self::MAX_NUMBER_OF_LINKS);
 
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $moduleTemplate->setTitle(

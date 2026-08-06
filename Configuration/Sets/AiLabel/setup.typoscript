@@ -1,0 +1,10 @@
+# Makes the AiLabel partial - and this extension's override of
+# EXT:fluid_styled_content's own (intentionally empty) DropIn/After/All.html,
+# which is what actually calls it for every content element - available to
+# fluid_styled_content's lib.contentElement, at a higher priority than
+# EXT:fluid_styled_content's own paths.
+lib.contentElement {
+    partialRootPaths {
+        1550 = EXT:ai_label/Resources/Private/Partials/
+    }
+}

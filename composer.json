@@ -5,7 +5,8 @@
     "license": "GPL-2.0-or-later",
     "require": {
         "typo3/cms-backend": "^13.4 || ^14.3",
-        "typo3/cms-frontend": "^13.4 || ^14.3"
+        "typo3/cms-frontend": "^13.4 || ^14.3",
+        "typo3/cms-fluid-styled-content": "^13.4 || ^14.3"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

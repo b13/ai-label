@@ -253,7 +253,7 @@ spec.
   point Core ships intentionally empty (just an `<f:comment>` placeholder), rendered
   by `Layouts/Default.html`'s `<f:render section="After" optional="true">` fallback
   after every content element's main output. Adds exactly one line,
-  `<f:render partial="AiLabel" arguments="{_all}" />`. **Deliberately not** a copy of
+  `<f:render partial="AiLabel" arguments="{record: data}" />`. **Deliberately not** a copy of
   the whole `Layouts/Default.html` (an earlier version of this feature did that, to
   extend the "Footer" section instead) - overriding this already-empty, dedicated
   extension point needs no Core-Layout duplication at all, and the opt-out for a

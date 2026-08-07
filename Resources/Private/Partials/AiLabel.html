@@ -9,19 +9,30 @@
 
     Arguments:
     - file (optional): a FAL file reference, e.g. arguments="{file: image}"
-    - data (optional, defaults to the record already in scope): the tt_content
-      (or other applicable table) row, e.g. arguments="{data: someRecord}"
+    - record (optional): the tt_content (or other applicable table) row to
+      check, e.g. arguments="{record: record}"
     - variant (optional, default "black"): one of "black", "black_transparent",
       "white", "white_transparent" - selects which of the bundled icon sets to
       use. Projects that ship their own icon set can override this partial via
       a higher-priority partialRootPaths entry.
 </f:comment>
+<f:argument name="file" type="TYPO3\CMS\Core\Resource\FileReference" optional="{true}"/>
+<f:argument name="record" type="array" optional="{true}"/>
+<f:argument name="variant" type="string" optional="{true}"/>
+<f:comment>
+    Not using f:argument's own "default" here: it only applies when the
+    argument is completely absent, not when it's explicitly passed as an
+    empty/null value (which callers forwarding their own possibly-unset
+    "variant" variable, e.g. arguments="{variant: variant}", will do) - the
+    truthy check below covers both cases.
+</f:comment>
+<f:variable name="variant" value="{f:if(condition: variant, then: variant, else: 'black')}"/>
 <f:if condition="{file}">
     <f:then>
         <f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
     </f:then>
-    <f:else>
-        <f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: data)}"/>
+    <f:else if="{record}">
+        <f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: record)}"/>
     </f:else>
 </f:if>
 <f:if condition="{aiMetadata.flagged}">
@@ -41,14 +52,13 @@
             height: var(--ai-label-icon-height, 16px);
         }
     </f:asset.css>
-    <f:variable name="version" value="{f:if(condition: variant, then: variant, else: 'black')}"/>
     <div class="b_ai-label">
         <f:switch expression="{aiMetadata.origin.value}">
             <f:case value="1">
-                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_generated_{version}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
+                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
             </f:case>
             <f:case value="2">
-                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_modified_{version}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
+                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
             </f:case>
         </f:switch>
     </div>

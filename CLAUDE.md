@@ -8,8 +8,8 @@ and frontend passthrough of the flag data. See `README.md` for the user-facing
 - Extension key `ai_label`, composer package `b13/ai-label`, PHP namespace `B13\AiLabel`
 - Must work on **both TYPO3 v13.4 and v14.3+** - this drives most of the architecture below
 - `require`: `typo3/cms-backend`, `typo3/cms-frontend` (hard dependency - see "Optional
-  dependencies" below for why). `typo3/cms-filelist` and `typo3/cms-workspaces` are
-  `require-dev` only.
+  dependencies" below for why). `typo3/cms-filelist`, `typo3/cms-workspaces`, and
+  `typo3/cms-fluid-styled-content` are `require-dev` only.
 
 ## Data model
 
@@ -293,11 +293,6 @@ spec.
   `@import 'EXT:ai_label/Configuration/TypoScript/setup.typoscript'` line in its own
   `setup.typoscript` (the line that actually merges the TypoScript in) - see README.md's
   "Frontend integration" intro for both.
-- `typo3/cms-fluid-styled-content` is now a hard `require` (previously not required at
-  all, since nothing touched it) - the extension actively reaches into its
-  `lib.contentElement`/`Layouts/Default.html` structure now, so this is a real
-  compile-time-safe dependency, not just a runtime nicety.
-
 Both ViewHelpers (`render(): ?AiMetadata`) return the `AiMetadata` object directly when
 used inline (`{ailabel:recordMetadata(record: data)}`), but return `null` when the
 optional `as` argument is used to assign a variable directly (same convention as
@@ -312,6 +307,14 @@ original `string|AiMetadata`/`return ''` signature, just a more honest type).
 references `ProcessFileListActionsEvent` as a method-parameter type hint, which PHP
 resolves lazily (only when actually invoked). If filelist isn't installed, the class
 still loads fine and the listener is simply dormant (event never fires).
+
+`typo3/cms-fluid-styled-content` is `require-dev` only too - the automatic DropIn
+integration (`Configuration/Sets/AiLabel/setup.typoscript` overriding
+`lib.contentElement.partialRootPaths`) is pure TypoScript, no PHP class dependency
+anywhere. Without fluid_styled_content installed, `lib.contentElement` itself doesn't
+exist, so the override is simply inert - the rest of the extension (ViewHelpers,
+DataProcessor, backend badges) works standalone. `ext_emconf.php` already only lists
+it under `suggests`, not `depends`; composer.json now matches that.
 
 `typo3/cms-frontend` must stay a hard `require`: `AiLabelProcessor implements
 DataProcessorInterface` is a class-declaration-level dependency (`implements`, not a

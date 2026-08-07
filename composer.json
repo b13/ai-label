@@ -5,8 +5,11 @@
     "license": "GPL-2.0-or-later",
     "require": {
         "typo3/cms-backend": "^13.4 || ^14.3",
-        "typo3/cms-frontend": "^13.4 || ^14.3",
-        "typo3/cms-fluid-styled-content": "^13.4 || ^14.3"
+        "typo3/cms-frontend": "^13.4 || ^14.3"
+    },
+    "suggest": {
+        "typo3/cms-fluid-styled-content": "Automatically renders the AI label on every content element via a DropIn/After/All.html override",
+        "typo3/cms-filelist": "Shows AI-label badges for flagged files in the File > Filelist backend module"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -15,7 +18,8 @@
         "phpstan/phpstan": "^2.1",
         "typo3/coding-standards": "^0.5.5",
         "typo3/cms-workspaces": "^13.4 || ^14.3",
-        "typo3/cms-filelist": "^13.4 || ^14.3"
+        "typo3/cms-filelist": "^13.4 || ^14.3",
+        "typo3/cms-fluid-styled-content": "^13.4 || ^14.3"
     },
     "config": {
         "vendor-dir": ".Build/vendor",

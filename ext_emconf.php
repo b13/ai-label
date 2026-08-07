@@ -14,6 +14,9 @@ $EM_CONF[$_EXTKEY] = [
             'typo3' => '13.4.0-14.99.99',
         ],
         'conflicts' => [],
-        'suggests' => [],
+        'suggests' => [
+            'fluid_styled_content' => '13.4.0-14.99.99',
+            'filelist' => '13.4.0-14.99.99',
+        ],
     ],
 ];

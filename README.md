@@ -108,10 +108,117 @@ table back out.)
 
 ## Frontend integration
 
-This extension does **not** render anything in the frontend by itself - no
-markup, no CSS, no opinionated label text. It only hands the `AiMetadata`
-domain object through to your Fluid templates; how (or whether) you display it
-is entirely up to you.
+This extension renders a small AI-origin marker on every content element
+that is flagged (`tx_ailabel_origin` = "AI created" or "AI modified"), once
+its TypoScript is included in your project:
+
+**Site-Set-based projects** (TYPO3 v13.4+): add `b13/ai-label` to your own
+Site Set's `dependencies` in `config.yaml` (for discoverability/settings
+merging), **and** explicitly `@import` its TypoScript in your own Set's
+`setup.typoscript` - listing a dependency alone does **not** pull in its
+TypoScript:
+
+```yaml
+# config.yaml
+dependencies:
+  - b13/ai-label
+```
+
+```typoscript
+# setup.typoscript
+@import 'EXT:ai_label/Configuration/TypoScript/setup.typoscript'
+```
+
+**Classic TypoScript template projects**: select "Include static: AI Label"
+in the TypoScript template module (Web > Template), or `@import` the same
+file directly.
+
+Once included, it hooks into `EXT:fluid_styled_content`'s `lib.contentElement`
+via a higher-priority `partialRootPaths` entry (`Configuration/Sets/AiLabel/setup.typoscript`)
+that overrides `Partials/DropIn/After/All.html` - an extension point
+`EXT:fluid_styled_content` ships intentionally empty for exactly this
+purpose, already rendered after every content element's main output by its
+`Layouts/Default.html`:
+
+```html
+<f:render section="After" optional="true">
+    <f:render partial="DropIn/After/All" arguments="{_all}" />
+</f:render>
+```
+
+This extension's `DropIn/After/All.html` (`Resources/Private/Partials/DropIn/After/All.html`)
+just adds one line to that otherwise-empty placeholder:
+
+```html
+<f:render partial="AiLabel" arguments="{_all}" />
+```
+
+The `AiLabel` partial (`Resources/Private/Partials/AiLabel.html`):
+
+- Resolves the current record's `AiMetadata` via `<ailabel:recordMetadata>`
+  (or, if a `file` argument is passed, e.g. from your own template,
+  `<ailabel:fileMetadata>`).
+- Renders nothing unless `aiMetadata.flagged` is true.
+- Outputs one of eight bundled SVG icons
+  (`Resources/Public/Icons/ai_generated_*.svg` / `ai_modified_*.svg` -
+  `black`/`white` x plain/`_transparent`, selected via the optional `variant`
+  argument, default `black`) via `f:image` - no image-processing/asset-pipeline
+  dependency beyond core Fluid.
+- Ships its own `<f:asset.css>` for the `.b_ai-label`/`.b_ai-label__icon`
+  classes, positioned entirely through CSS custom properties
+  (`--ai-label-position`, `--ai-label-inset`, `--ai-label-margin`,
+  `--ai-label-gridcolumn`, `--ai-label-alignitems`, `--ai-label-zindex`,
+  `--ai-label-icon-width`, `--ai-label-icon-height`) - set these on a
+  surrounding container in your own CSS to position the marker for a given
+  content element/component; the defaults just anchor it bottom-right.
+
+### Overriding the default markup/icons
+
+Projects that want their own icon set, markup, or positioning can override the
+partial with a higher-priority `partialRootPaths` entry pointing to their own
+`AiLabel.html` (same filename, same argument contract - optional `file`,
+`data`, `variant`):
+
+```typoscript
+lib.contentElement {
+    partialRootPaths {
+        2000 = EXT:my_sitepackage/Resources/Private/Partials/
+    }
+}
+```
+
+### Upgrading an existing project with manual `AiLabel` calls
+
+If your project already renders an `AiLabel` partial manually per template
+(e.g. `<f:render partial="AiLabel" arguments="{data: data}" />` inside
+individual content element templates), pulling in this version of the
+extension renders it a **second time**, through the new automatic `DropIn/After/All`
+hook. To opt out and keep your existing manual calls as the only source,
+register your own `partialRootPaths` entry at a higher priority than the
+extension's (`1550`, see `Configuration/Sets/AiLabel/setup.typoscript`) with a
+copy of `DropIn/After/All.html` that's empty again (i.e. the original
+`EXT:fluid_styled_content/Resources/Private/Partials/DropIn/After/All.html`
+placeholder, without the added `<f:render partial="AiLabel" .../>` line):
+
+```typoscript
+lib.contentElement {
+    partialRootPaths {
+        2000 = EXT:my_sitepackage/Resources/Private/Partials/
+    }
+}
+```
+
+That's the only change needed - your existing per-template calls keep working
+unmodified.
+
+### Lower-level building blocks
+
+The automatic rendering above is built entirely on the same public building
+blocks documented below - `AiMetadata`, the DataProcessor and the two
+ViewHelpers. Use them directly if you need the flag somewhere the automatic
+Footer hook doesn't reach (e.g. a custom Layout that doesn't use
+`fluid_styled_content`'s `Default` layout, or a per-image marker inside a
+gallery).
 
 `AiMetadata` (`B13\AiLabel\Domain\Model\AiMetadata`) exposes:
 

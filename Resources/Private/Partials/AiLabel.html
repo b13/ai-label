@@ -1,0 +1,56 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:ailabel="http://typo3.org/ns/B13/AiLabel/ViewHelpers"
+      data-namespace-typo3-fluid="true"
+>
+<f:comment>
+    Renders the AI origin marker for the current content record (or, if a FAL
+    "file" argument is passed, for that file) - nothing renders unless the
+    record/file is actually flagged.
+
+    Arguments:
+    - file (optional): a FAL file reference, e.g. arguments="{file: image}"
+    - data (optional, defaults to the record already in scope): the tt_content
+      (or other applicable table) row, e.g. arguments="{data: someRecord}"
+    - variant (optional, default "black"): one of "black", "black_transparent",
+      "white", "white_transparent" - selects which of the bundled icon sets to
+      use. Projects that ship their own icon set can override this partial via
+      a higher-priority partialRootPaths entry.
+</f:comment>
+<f:if condition="{file}">
+    <f:then>
+        <f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
+    </f:then>
+    <f:else>
+        <f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: data)}"/>
+    </f:else>
+</f:if>
+<f:if condition="{aiMetadata.flagged}">
+    <f:asset.css identifier="ai-label">
+        .b_ai-label {
+            display: flex;
+            justify-content: var(--ai-label-alignitems, flex-end);
+            margin: var(--ai-label-margin, 1rem 0 0);
+            position: var(--ai-label-position);
+            inset: var(--ai-label-inset);
+            z-index: var(--ai-label-zindex, 10);
+            pointer-events: none;
+            grid-column: var(--ai-label-gridcolumn);
+        }
+        .b_ai-label__icon {
+            width: var(--ai-label-icon-width, 83px);
+            height: var(--ai-label-icon-height, 16px);
+        }
+    </f:asset.css>
+    <f:variable name="version" value="{f:if(condition: variant, then: variant, else: 'black')}"/>
+    <div class="b_ai-label">
+        <f:switch expression="{aiMetadata.origin.value}">
+            <f:case value="1">
+                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_generated_{version}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
+            </f:case>
+            <f:case value="2">
+                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_modified_{version}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
+            </f:case>
+        </f:switch>
+    </div>
+</f:if>
+</html>

@@ -25,10 +25,11 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 class EnrichAiMetaDataTest extends FunctionalTestCase
 {
     // ai_label composer-requires typo3/cms-filelist (for the file list marker event
-    // listener) - not part of testing-framework's default sysext set, so it must be
-    // loaded explicitly or PackageCollection throws "depends on package filelist".
+    // listener) and typo3/cms-fluid-styled-content - neither is part of testing-framework's
+    // default sysext set, so both must be loaded explicitly or PackageCollection throws.
     protected array $coreExtensionsToLoad = [
         'filelist',
+        'fluid_styled_content',
     ];
 
     protected array $testExtensionsToLoad = [

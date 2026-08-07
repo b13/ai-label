@@ -1,0 +1,25 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:comment>
+    Overrides EXT:fluid_styled_content's own DropIn/After/All.html, which is an
+    intentionally empty extension point (rendered after all other output inside
+    every content element's wrapping container) - see
+    Layouts/Default.html in EXT:fluid_styled_content:
+
+    <f:render section="After" optional="true">
+        <f:render partial="DropIn/After/All" arguments="{_all}" />
+    </f:render>
+
+    Adding the AiLabel render call here (instead of copying the whole Layout
+    just to extend its "Footer" section) means every content element gets it
+    automatically without this extension having to duplicate/maintain a copy
+    of Core's Layout file.
+
+    Projects that already render AiLabel manually per template, and want to
+    opt out of this automatic rendering, can register their own
+    partialRootPaths entry at a higher priority than this extension's (1550,
+    see Configuration/TypoScript/setup.typoscript) with a copy of this file
+    that omits the AiLabel render call again - see README.md, "Upgrading an
+    existing project with manual AiLabel calls".
+</f:comment>
+<f:render partial="AiLabel" arguments="{_all}" />
+</html>

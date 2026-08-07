@@ -1,0 +1,5 @@
+# For projects using classic TypoScript templates instead of Site Sets:
+# select "Include static: AI Label" in the TypoScript template module.
+# Site-Set-based projects should instead add "b13/ai-label" to their own
+# Set's config.yaml "dependencies" - see Configuration/Sets/AiLabel/.
+@import 'EXT:ai_label/Configuration/Sets/AiLabel/setup.typoscript'

@@ -228,18 +228,75 @@ Known version-safe APIs (confirmed identical on v13.4 and v14, no split needed):
 
 ## Frontend integration
 
-Deliberately minimal: `AiLabelProcessor` (DataProcessor) and `RecordMetadataViewHelper`/
-`FileMetadataViewHelper` just hand the `AiMetadata` object through to Fluid - **no**
-decision DTO, no rendered HTML, no opinionated label text. An earlier attempt built a
-whole `AiLabelDecision`/`AiOrigin`/`AiLabelService` layer modeled on a wiki.txt spec the
-user never asked for - that was explicitly rejected and removed. `AiOrigin` later came
-back (see "Data model") because the user explicitly asked for that one specific piece
-("den enum kannste so von der wiki.txt übernehmen") to replace the old two-boolean
-aiCreated/aiModified shape - but `AiLabelDecision`/`AiLabelService`/rendered-HTML/
-aria-label/site-settings config from that same spec were NOT re-requested and still
-don't exist. If asked to extend the frontend integration further, keep following the
-"just pass the object through" principle and don't reach back into wiki.txt for more
-unless explicitly told to.
+**No longer "renders nothing by itself"** - that was the original design, deliberately
+reversed by explicit user request (2026-08-06): the extension now ships opinionated
+default markup/CSS/icons and wires itself into every content element automatically.
+The low-level building blocks (`AiLabelProcessor`, `RecordMetadataViewHelper`/
+`FileMetadataViewHelper` handing `AiMetadata` through to Fluid, no decision DTO) are
+unchanged and still the right things to reach for when the automatic path below doesn't
+apply - only the "nothing renders by default" part of the old design is gone. An earlier
+attempt built a whole `AiLabelDecision`/`AiLabelService` layer modeled on a wiki.txt spec
+the user never asked for - that's still explicitly rejected; the current opinionated
+frontend (below) was requested directly in this conversation, not resurrected from that
+spec.
+
+- **`Resources/Private/Partials/AiLabel.html`**: the actual markup - resolves
+  `AiMetadata` via `<ailabel:recordMetadata>`/`<ailabel:fileMetadata>` (same ViewHelpers
+  as always), renders nothing unless `flagged`, outputs one of the 8 bundled
+  `Resources/Public/Icons/ai_{generated,modified}_{black,white}{,_transparent}.svg` via
+  `f:image` (deliberately not `ac:svg`/`b13/assetcollector`, to avoid a new hard
+  dependency - the user explicitly asked for `f:image`), and ships its own
+  `<f:asset.css>` block. `variant` argument (default `black`) picks the icon color/opacity
+  set.
+- **`Resources/Private/Partials/DropIn/After/All.html`**: overrides
+  `EXT:fluid_styled_content`'s own `Partials/DropIn/After/All.html` - an extension
+  point Core ships intentionally empty (just an `<f:comment>` placeholder), rendered
+  by `Layouts/Default.html`'s `<f:render section="After" optional="true">` fallback
+  after every content element's main output. Adds exactly one line,
+  `<f:render partial="AiLabel" arguments="{_all}" />`. **Deliberately not** a copy of
+  the whole `Layouts/Default.html` (an earlier version of this feature did that, to
+  extend the "Footer" section instead) - overriding this already-empty, dedicated
+  extension point needs no Core-Layout duplication at all, and the opt-out for a
+  project that already calls `AiLabel` manually (e.g. `srh-edu`, ~60 templates outside
+  any Footer/After section) is now just re-overriding this same one file with the
+  empty placeholder restored, at a higher `partialRootPaths` priority - no
+  `layoutRootPaths` entry needed on either side. See README.md, "Upgrading an
+  existing project with manual AiLabel calls".
+- **`Configuration/Sets/AiLabel/setup.typoscript`** (+ `config.yaml`, `name: b13/ai-label`):
+  registers the Partials directory into `lib.contentElement.partialRootPaths` at
+  priority `1550` - high enough to win over `EXT:fluid_styled_content`'s own `.10`,
+  low enough that a project can still out-prioritize it (see README.md's two override
+  sections). `Configuration/TypoScript/setup.typoscript` (classic, extension root) just
+  `@import`s the Set's file, so both registration paths share one source of truth -
+  same pattern as `b13/b13-baseconfig` (see its `Configuration/TypoScript/setup.typoscript`
+  and `Configuration/Sets/b13-baseconfig/`).
+  **Deliberately not** `ExtensionManagementUtility::addTypoScriptSetup()` in
+  `ext_localconf.php` - an earlier version of this feature used that (attractive on paper:
+  merges into `defaultTypoScript_setup` and `defaultTypoScript_setup.siteSets`
+  unconditionally, no "Include static template" selection needed anywhere). It does not
+  reliably end up in a Site-Set-based project's actual resolved TypoScript in practice -
+  confirmed by integration-testing against a real b13 project (`veridos`): the registered
+  `partialRootPaths.1550` entry was simply absent from the search path Fluid actually used
+  (visible directly in the `InvalidTemplateResourceException`'s list of tried paths), even
+  after a full cache flush.
+  **Listing a Set as a `dependencies` entry in `config.yaml` alone does not pull in its
+  `setup.typoscript` either** - also confirmed the hard way against the same project:
+  adding `b13/ai-label` to `site_veridos`'s Set dependencies (nothing else) left
+  `lib.contentElement.partialRootPaths.1550` just as absent as the `addTypoScriptSetup()`
+  attempt did, even though `site:sets:list`/`site:show` correctly resolved and displayed
+  the dependency. TypoScript setup content only actually merges in once something
+  explicitly `@import`s the file by path - this is why `site_veridos`'s own
+  `setup.typoscript` explicitly imports `b13-baseconfig`, `seo`, `picture`, `solr`, `form`,
+  etc. one by one, despite all of them also being listed under `dependencies`. So a
+  consuming project needs **both**: `b13/ai-label` under its own Set's `dependencies`
+  (bookkeeping/discoverability) **and** an explicit
+  `@import 'EXT:ai_label/Configuration/TypoScript/setup.typoscript'` line in its own
+  `setup.typoscript` (the line that actually merges the TypoScript in) - see README.md's
+  "Frontend integration" intro for both.
+- `typo3/cms-fluid-styled-content` is now a hard `require` (previously not required at
+  all, since nothing touched it) - the extension actively reaches into its
+  `lib.contentElement`/`Layouts/Default.html` structure now, so this is a real
+  compile-time-safe dependency, not just a runtime nicety.
 
 Both ViewHelpers (`render(): ?AiMetadata`) return the `AiMetadata` object directly when
 used inline (`{ailabel:recordMetadata(record: data)}`), but return `null` when the

@@ -22,11 +22,13 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 final class AiMetadataRecordFinderTest extends FunctionalTestCase
 {
-    // ai_label composer-requires typo3/cms-filelist, and BackendUtility::workspaceOL()
-    // is a no-op without EXT:workspaces loaded - neither is part of testing-framework's
-    // default sysext set, so both need to be loaded explicitly.
+    // ai_label composer-requires typo3/cms-filelist and typo3/cms-fluid-styled-content,
+    // and BackendUtility::workspaceOL() is a no-op without EXT:workspaces loaded - none of
+    // these are part of testing-framework's default sysext set, so all need to be loaded
+    // explicitly.
     protected array $coreExtensionsToLoad = [
         'filelist',
+        'fluid_styled_content',
         'workspaces',
     ];
 

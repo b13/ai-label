@@ -150,7 +150,7 @@ This extension's `DropIn/After/All.html` (`Resources/Private/Partials/DropIn/Aft
 just adds one line to that otherwise-empty placeholder:
 
 ```html
-<f:render partial="AiLabel" arguments="{_all}" />
+<f:render partial="AiLabel" arguments="{record: data}" />
 ```
 
 The `AiLabel` partial (`Resources/Private/Partials/AiLabel.html`):
@@ -177,7 +177,7 @@ The `AiLabel` partial (`Resources/Private/Partials/AiLabel.html`):
 Projects that want their own icon set, markup, or positioning can override the
 partial with a higher-priority `partialRootPaths` entry pointing to their own
 `AiLabel.html` (same filename, same argument contract - optional `file`,
-`data`, `variant`):
+`record`, `variant`):
 
 ```typoscript
 lib.contentElement {
@@ -190,7 +190,7 @@ lib.contentElement {
 ### Upgrading an existing project with manual `AiLabel` calls
 
 If your project already renders an `AiLabel` partial manually per template
-(e.g. `<f:render partial="AiLabel" arguments="{data: data}" />` inside
+(e.g. `<f:render partial="AiLabel" arguments="{record: record}" />` inside
 individual content element templates), pulling in this version of the
 extension renders it a **second time**, through the new automatic `DropIn/After/All`
 hook. To opt out and keep your existing manual calls as the only source,

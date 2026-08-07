@@ -19,10 +19,12 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 final class AiLabelApiTest extends FunctionalTestCase
 {
-    // ai_label composer-requires typo3/cms-filelist - not part of testing-framework's
-    // default sysext set, so it must be loaded explicitly or PackageCollection throws.
+    // ai_label composer-requires typo3/cms-filelist and typo3/cms-fluid-styled-content -
+    // neither is part of testing-framework's default sysext set, so both must be loaded
+    // explicitly or PackageCollection throws.
     protected array $coreExtensionsToLoad = [
         'filelist',
+        'fluid_styled_content',
     ];
 
     protected array $testExtensionsToLoad = [

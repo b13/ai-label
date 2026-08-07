@@ -30,6 +30,7 @@ final class VirtualSelectElementTest extends FunctionalTestCase
 {
     protected array $coreExtensionsToLoad = [
         'filelist',
+        'fluid_styled_content',
     ];
 
     protected array $testExtensionsToLoad = [

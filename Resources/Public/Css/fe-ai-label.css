@@ -1,0 +1,14 @@
+.b_ai-label {
+    display: flex;
+    justify-content: var(--ai-label-alignitems, flex-end);
+    margin: var(--ai-label-margin, 1rem 0 0);
+    position: var(--ai-label-position);
+    inset: var(--ai-label-inset);
+    z-index: var(--ai-label-zindex, 10);
+    pointer-events: none;
+    grid-column: var(--ai-label-gridcolumn);
+}
+.b_ai-label__icon {
+    width: var(--ai-label-icon-width, 83px);
+    height: var(--ai-label-icon-height, 16px);
+}

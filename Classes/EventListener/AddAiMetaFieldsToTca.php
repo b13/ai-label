@@ -51,6 +51,7 @@ final class AddAiMetaFieldsToTca
             // never touches this field.
             $tca[$tableName]['columns']['tx_ailabel_origin'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin',
+                'description' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.description',
                 'onChange' => 'reload',
                 'config' => [
                     'type' => 'user',
@@ -65,14 +66,19 @@ final class AddAiMetaFieldsToTca
             // Only relevant while the record is flagged as AI-created/-modified
             $tca[$tableName]['columns']['tx_ailabel_reviewed'] = [
                 'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.reviewed',
+                'description' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.reviewed.description',
                 'config' => [
                     'type' => 'user',
                     'renderType' => 'aiLabelVirtualCheckbox',
                 ],
                 'displayCond' => 'FIELD:tx_ailabel_origin:!=:' . AiOrigin::Human->value,
             ];
+            // The palette description carries the "why does this exist at all" framing
+            // (EU AI Act, Article 50) once, above both fields - the per-field descriptions
+            // below it only explain how to fill that particular field in.
             $tca[$tableName]['palettes']['aiLabelMetadata'] = [
                 'showitem' => 'tx_ailabel_origin, tx_ailabel_reviewed',
+                'description' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:palette.aiMetadata.description',
             ];
             $tca[$tableName]['columns']['tx_ailabel_metadata'] = [
                 'label' => 'tx_ailabel_metadata',

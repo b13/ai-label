@@ -1,15 +1,95 @@
 # EXT:ai_label
 
-Flags backend records as AI-created / AI-modified, with an editorial review
-workflow, backend markers (Web>List, File>Filelist, Page/Layout module), and an
-overview module listing every flagged record.
+Mark content in TYPO3 as created or modified by AI, keep track of who checked
+it, and show a marker to your visitors - so your website meets the disclosure
+rules of the EU AI Act.
+
+## What does it do?
+
+Since 2 August 2026, the EU AI Act requires websites to tell their visitors when
+certain content was made or altered by AI. This extension gives your editors a
+simple way to record that, and takes care of showing the notice on the website.
+
+**For editors**, every page, content element and image gets a new "AI Metadata"
+tab with two things to fill in:
+
+- **AI origin** - was this content created by AI from scratch, modified by AI,
+  or is no AI involved at all? Everyday helpers such as spell-checking or
+  colour correction don't count.
+- **Reviewed** - tick this once you have actually read the content and checked
+  that it is correct. TYPO3 remembers who reviewed it and when.
+
+Whenever a flagged record is edited again, the review is cleared automatically,
+so changed content always gets a fresh pair of eyes before it counts as checked.
+
+**For visitors**, every flagged content element automatically shows a small AI
+marker on the published page - no template work needed. The icons, wording and
+position can all be replaced with your own.
+
+**For everyone working in the backend**, flagged records are easy to spot: an
+"AI" marker with the review status appears in the List module, the Filelist and
+the Page module (for the page itself and for each content element). A dedicated
+"AI Label" backend module lists every flagged record across the whole site, so
+you can see at a glance what still needs reviewing.
+
+If a flagged file is later replaced or overwritten, editors get a reminder to
+check whether the stored AI origin still fits - the old classification was made
+for the old file, after all - and any existing review of that file is reset.
+
+## How this helps with the EU AI Act
+
+The relevant rule is **Article 50 of the EU AI Act** (Regulation (EU) 2024/1689),
+which applies since **2 August 2026**. It puts two duties on you as the operator
+of a website that publishes AI content:
+
+1. **AI-generated or AI-altered images, audio and video** that could pass as
+   real ("deepfakes") must be disclosed to the visitor.
+2. **AI-generated or AI-altered text on matters of public interest** - politics,
+   health, public safety, the environment, consumer protection and similar
+   topics relevant to public debate - must be disclosed as well. This one has an
+   exception: if a person genuinely reviewed the text for substance and someone
+   holds editorial responsibility for publishing it, no public label is required.
+
+In both cases the disclosure has to be **clear, easy to understand, and visible
+by the time the visitor first sees the content**. A technical watermark alone is
+not enough.
+
+This is what the extension maps onto:
+
+| What the law asks for | How the extension covers it |
+| --- | --- |
+| Record whether content was generated or manipulated by AI | The **AI origin** field, using the law's own wording |
+| Show visitors a clear notice at first sight | The **AI marker**, rendered automatically on every flagged content element |
+| Human review with editorial responsibility (the text exception) | The **Reviewed** checkbox, storing who checked it and when |
+| Keep that review meaningful over time | Editing a flagged record **resets** the review automatically |
+| Keep an overview of what is published | The **AI Label** backend module, plus the markers in the List, Filelist and Page modules |
+
+Two things worth knowing:
+
+- **The marker is shown for every flagged record**, including reviewed text.
+  The law would allow you to leave the label off properly reviewed text, but
+  showing it anyway is always permitted and is the safer default. If you want
+  different behaviour, override the `AiLabel` partial (see *Frontend
+  integration* below).
+- **Human review does not remove the duty for images, audio and video.** The
+  exception in Article 50(4) covers text only, so flagged media stays labelled
+  no matter how carefully it was checked.
+
+This extension provides the tooling; it cannot make you compliant on its own.
+Whether a given piece of content falls under Article 50, and whether your review
+process meets the standard the law expects, remains your decision. This document
+is not legal advice.
+
+## Requirements
 
 - Extension key: `ai_label`
 - Composer package: `b13/ai-label`
 - PHP namespace: `B13\AiLabel`
 - Compatible with TYPO3 v13.4 and v14.3+
 
-## What it does
+---
+
+## How it works internally
 
 - Adds a `tx_ailabel_origin` select (`No AI involvement` / `AI created` / `AI
   modified`, exclusive - a record is never both) plus a `tx_ailabel_reviewed`
@@ -24,11 +104,11 @@ overview module listing every flagged record.
 - As long as a record is flagged, changing its content resets the review
   state, so an editor has to review it again - unless the same save also
   (re-)ticks "reviewed".
-- Shows an "AI" marker with the review status in the Web>List module, the
-  File>Filelist module, and the Page/Layout module (both the page itself and
-  its content elements).
-- Backend module "AI Label" (Web menu) lists every currently flagged record,
-  workspace-aware.
+- The "AI Label" backend module (Web menu) and the record/file list markers are
+  workspace-aware, resolving records for the currently selected workspace.
+- The two form fields carry TCA `description` texts explaining the Article 50
+  duties in plain language, plus a palette description above them
+  (`AddAiMetaFieldsToTca`, labels in `locallang_db.xlf`).
 - Changing a flagged file's actual content (replacing it, or overwriting its
   contents directly) shows a flash message in the backend reminding the editor
   to double-check whether the stored AI origin is still correct - the origin

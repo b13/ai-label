@@ -31,21 +31,17 @@ final class VirtualCheckboxElement extends CheckboxToggleElement
     {
         if ($this->data['fieldName'] === 'tx_ailabel_reviewed') {
             $aiMetadata = AiMetadata::fromArray($this->data['databaseRow']['tx_ailabel_metadata'] ?? null);
-            if ($aiMetadata->isFlagged() === false) {
-                return parent::wrapWithFieldsetAndLegend($innerHTML);
+            if ($aiMetadata->isFlagged()) {
+                // Prepend the review badge to the element's own markup and let core build the
+                // fieldset around both, instead of hand-building the fieldset here. Doing the
+                // latter meant duplicating core's legend/debug-info handling, and - on v14 -
+                // silently dropping the field's TCA "description": AbstractFormElement renders
+                // it from inside this very method there, so an override that never calls the
+                // parent swallows it. (On v13 the description arrives as part of $innerHTML
+                // instead, via CheckboxToggleElement's "tcaDescription" fieldInformation node -
+                // hence the badge sits above the description text there and below it on v14.)
+                $innerHTML = $this->badgeFactory->getBadge($aiMetadata) . chr(10) . $innerHTML;
             }
-            $legend = htmlspecialchars($this->data['parameterArray']['fieldConf']['label'] ?? '');
-            if ($this->getBackendUser()->shallDisplayDebugInformation()) {
-                $fieldName = $this->data['flexFormContainerFieldName'] ?? $this->data['flexFormFieldName'] ?? $this->data['fieldName'];
-                $legend .= ' <code>[' . htmlspecialchars($fieldName) . ']</code>';
-            }
-            $html = [];
-            $html[] = '<fieldset>';
-            $html[] =     '<legend class="form-label t3js-formengine-label">' . $legend . '</legend>';
-            $html[] =     $this->badgeFactory->getBadge($aiMetadata);
-            $html[] =     $innerHTML;
-            $html[] = '</fieldset>';
-            return implode(chr(10), $html);
         }
         return parent::wrapWithFieldsetAndLegend($innerHTML);
     }

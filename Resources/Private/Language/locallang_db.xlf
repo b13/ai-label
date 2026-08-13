@@ -6,6 +6,9 @@
             <trans-unit id="field.ai_origin">
                 <source>AI origin</source>
             </trans-unit>
+            <trans-unit id="field.ai_origin.description">
+                <source>Pick "AI created" when an AI produced this content from scratch, and "AI modified" when an AI substantially changed something a person made - for example swapping a face in a photo or rewriting a paragraph. Everyday helpers such as spell-checking, autocomplete or colour correction do not count, so leave those as "No AI involvement".</source>
+            </trans-unit>
             <trans-unit id="field.ai_origin.human">
                 <source>No AI involvement</source>
             </trans-unit>
@@ -18,8 +21,14 @@
             <trans-unit id="tabs.aiMetadata">
                 <source>AI Metadata</source>
             </trans-unit>
+            <trans-unit id="palette.aiMetadata.description">
+                <source>If AI was involved in creating this content, record it here. Flagged records show a small marker on the published page. For AI-generated images that could pass as real photos, and for AI-written text on matters of public interest such as politics, health or public safety, disclosing this is required by law (EU AI Act, Article 50). Everywhere else it is simply good practice.</source>
+            </trans-unit>
             <trans-unit id="field.reviewed">
                 <source>Reviewed</source>
+            </trans-unit>
+            <trans-unit id="field.reviewed.description">
+                <source>Tick this once a person has genuinely read the content and checked that it is accurate - a quick glance or a spell-check is not enough. By ticking it you take responsibility for what is published. For text, the law accepts such a review instead of a public label; for images, audio and video it does not, so those stay labelled either way. This extension keeps showing the marker for every flagged record regardless, which is always the safe option. Editing a flagged record later clears the review, so the content gets checked again.</source>
             </trans-unit>
             <trans-unit id="notice.reviewRequired">
                 <source>Review required</source>

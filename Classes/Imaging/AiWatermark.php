@@ -112,9 +112,22 @@ final class AiWatermark implements LoggerAwareInterface
         GeneralUtility::unlink_tempfile($targetFile);
     }
 
+    /**
+     * The sizing rule: a constant TARGET_WIDTH, never exceeded, so the badge cannot grow
+     * with the image - only pictures too small to carry it shrink the badge, and then to
+     * at most MAX_RELATIVE_WIDTH of their own width.
+     *
+     * Public because it is the one piece of behaviour here that can be asserted without
+     * an image processor installed, and it has regressed once already.
+     */
+    public function getBadgeWidth(int $imageWidth): int
+    {
+        return min(self::TARGET_WIDTH, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
+    }
+
     private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth): bool
     {
-        $badgeWidth = min(self::TARGET_WIDTH, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
+        $badgeWidth = $this->getBadgeWidth($imageWidth);
         $margin = min(self::MAX_MARGIN, max(4, (int)round($imageWidth * self::MARGIN_RATIO)));
 
         // The parenthesised group scales the badge before it is composited, so the

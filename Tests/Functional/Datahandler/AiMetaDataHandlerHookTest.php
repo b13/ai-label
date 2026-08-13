@@ -14,6 +14,8 @@ namespace B13\AiLabel\Tests\Functional\Datahandler;
 
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\DateTimeAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -41,11 +43,21 @@ class AiMetaDataHandlerHookTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Fixed "now" so tstamp/crdate and the hook's reviewed_timestamp are deterministic.
-        $GLOBALS['EXEC_TIME'] = 1440000000;
         $this->importCSVDataSet(__DIR__ . '/Fixtures/be_users.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/pages.csv');
         $this->backendUser = $GLOBALS['BE_USER'] = $this->setUpBackendUser(1);
+        // Fixed "now" so the hook's reviewed_timestamp is deterministic. It has to be
+        // frozen *after* setUpBackendUser(): on v14 the session it creates is validated
+        // against $GLOBALS['EXEC_TIME'], and a value years in the past makes that session
+        // look long expired, which surfaces as "Can not initialize backend user".
+        // Context caches its date aspect the first time it is instantiated - which happens
+        // during that authentication - so $GLOBALS['EXEC_TIME'] alone no longer reaches the
+        // hook, and the aspect has to be replaced explicitly as well.
+        $GLOBALS['EXEC_TIME'] = 1440000000;
+        GeneralUtility::makeInstance(Context::class)->setAspect(
+            'date',
+            new DateTimeAspect(new \DateTimeImmutable('@1440000000'))
+        );
         $GLOBALS['LANG'] = GeneralUtility::makeInstance(LanguageServiceFactory::class)->createFromUserPreferences($GLOBALS['BE_USER']);
         $this->dataHandler = GeneralUtility::makeInstance(DataHandler::class);
     }

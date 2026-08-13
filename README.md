@@ -294,12 +294,31 @@ cached like any other processed image. Things to know:
   operator, so sites on GraphicsMagick silently keep the content element marker.
 - **SVGs are skipped** (they are never rasterised) as are images narrower than
   160px, where the badge would be unreadable anyway.
-- The badge scales to ~28% of the image width, clamped to 60-320px, and sits
-  bottom right.
+- The badge sits bottom right at a constant 160px wide and is never enlarged
+  beyond that, so it stays a discreet mark rather than growing with the image.
+  Only on images too small to carry it does it shrink, to at most a quarter of
+  the image width.
 - Only *processed* images are marked. If a template links an original file
   directly, without any processing instruction, it is served unmarked.
 - Changing a file's AI flag flushes that file's processed variants, so the
   change takes effect on the next render.
+
+> **Clear the processed files once, after switching this on.** FAL caches
+> processed images on the original file, the task and its configuration - none of
+> which change when you flip this setting. Variants generated before you enabled
+> `baked` therefore stay in place, unmarked, and nothing regenerates them. Run
+> this once after enabling (or disabling) the mode:
+>
+> ```
+> vendor/bin/typo3 cleanup:localprocessedfiles --all --dry-run   # inspect first
+> vendor/bin/typo3 cleanup:localprocessedfiles --all
+> ```
+>
+> `--all` is required: without it the command only clears orphaned records and
+> stubs, and leaves exactly the valid, already-rendered variants you need gone.
+> The command lives in EXT:lowlevel. This is only needed when the *setting*
+> changes - from then on, changing an individual file's AI flag flushes that
+> file's variants by itself.
 
 Both modes are additive to, not a replacement for, the content element marker -
 that keeps rendering either way, which is also what images falling into any of

@@ -24,7 +24,10 @@ so changed content always gets a fresh pair of eyes before it counts as checked.
 
 **For visitors**, every flagged content element automatically shows a small AI
 marker on the published page - no template work needed. The icons, wording and
-position can all be replaced with your own.
+position can all be replaced with your own. Optionally, flagged **images** can
+carry the marker themselves, either as a layer drawn over the image or burned
+into its pixels so it survives being downloaded - see *Marking images
+themselves* below.
 
 **For everyone working in the backend**, flagged records are easy to spot: an
 "AI" marker with the review status appears in the List module, the Filelist and
@@ -251,6 +254,56 @@ The `AiLabel` partial (`Resources/Private/Partials/AiLabel.html`):
   `--ai-label-icon-width`, `--ai-label-icon-height`) - set these on a
   surrounding container in your own CSS to position the marker for a given
   content element/component; the defaults just anchor it bottom-right.
+
+### Marking images themselves
+
+By default the marker belongs to the *content element*. A flagged image can also
+be marked on the image itself, controlled by one extension configuration setting
+(Admin Tools > Settings > Extension Configuration > ai_label > `imageMarker`):
+
+| Value | What happens |
+| --- | --- |
+| `off` (default) | Nothing changes - only the content element marker. |
+| `overlay` | The marker is drawn over the image as a positioned HTML layer. |
+| `baked` | The marker is composited into the pixels of the processed image. |
+
+**`overlay`** costs nothing at render time, stays crisp at any size and keeps the
+marker's `alt` text, but it is only markup - it is gone the moment the image is
+downloaded, hotlinked or shared. It works by overriding
+`EXT:fluid_styled_content`'s `Media/Rendering/Image` partial to wrap the image in
+`<span class="b_ai-label-image">` and render the `AiLabel` partial inside it,
+positioned by the same CSS custom properties as everywhere else (override
+`--ai-label-image-inset` to move it). Only flagged images get the wrapper.
+
+> **This only reaches images that `fluid_styled_content` itself renders.** A
+> sitepackage with its own media templates - which is most themes - never calls
+> that partial, so nothing appears. Such projects should render the marker in
+> their own image template instead: wrap the `<img>` in
+> `<span class="b_ai-label-image">` and add
+> `<f:render partial="AiLabel" arguments="{file: file}" />` next to it.
+
+**`baked`** writes the badge into the image, so the disclosure travels with the
+file wherever it ends up. It is implemented as a FAL processor
+(`B13\AiLabel\Imaging\AiWatermarkProcessor`) registered ahead of core's
+`LocalImageProcessor`, so it runs once per processed variant and the result is
+cached like any other processed image. Things to know:
+
+- **The original file is never touched** - only the generated variants under
+  `_processed_/`.
+- **Requires ImageMagick.** GraphicsMagick's `convert` has no `-composite`
+  operator, so sites on GraphicsMagick silently keep the content element marker.
+- **SVGs are skipped** (they are never rasterised) as are images narrower than
+  160px, where the badge would be unreadable anyway.
+- The badge scales to ~28% of the image width, clamped to 60-320px, and sits
+  bottom right.
+- Only *processed* images are marked. If a template links an original file
+  directly, without any processing instruction, it is served unmarked.
+- Changing a file's AI flag flushes that file's processed variants, so the
+  change takes effect on the next render.
+
+Both modes are additive to, not a replacement for, the content element marker -
+that keeps rendering either way, which is also what images falling into any of
+the exclusions above fall back to.
 
 ### Overriding the default markup/icons
 

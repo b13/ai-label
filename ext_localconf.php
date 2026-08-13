@@ -40,3 +40,12 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1785502900] = [
     'priority' => 40,
     'class' => \B13\AiLabel\Form\Element\VirtualSelectElement::class,
 ];
+
+// Bakes the AI badge into processed images, for the "baked" image marker mode only.
+// Ordered before LocalImageProcessor, which it extends - its canProcessTask() returns
+// false unless the mode is active and the file actually needs a watermark, so in every
+// other case the registry falls through to core's processor untouched.
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['fal']['processors']['AiLabelWatermarkProcessor'] = [
+    'className' => \B13\AiLabel\Imaging\AiWatermarkProcessor::class,
+    'before' => ['LocalImageProcessor'],
+];

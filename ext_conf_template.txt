@@ -1,0 +1,2 @@
+# cat=basic//10; type=options[Off - only the content element marker=off,CSS layer over the image=overlay,Burned into the processed image file=baked]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.imageMarker
+imageMarker = off

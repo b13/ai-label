@@ -1,0 +1,65 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  publish:
+    name: Publish new version to TER
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    env:
+      TYPO3_API_TOKEN: ${{ secrets.TYPO3_API_TOKEN }}
+
+    steps:
+      # Tags are fetched in full: the release comment below is read back off the
+      # annotated tag, which a shallow checkout would not carry.
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Only ever publish plain x.y.z tags - TER has no concept of pre-releases, and a
+      # typo in a tag name would otherwise be published under whatever it happened to say.
+      - name: Check tag
+        run: |
+          if ! [[ "${GITHUB_REF}" =~ ^refs/tags/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            echo "Refusing to publish '${GITHUB_REF}': expected a tag of the form 1.2.3."
+            exit 1
+          fi
+
+      - name: Get version
+        id: get-version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      # The annotated tag's own message becomes the TER upload comment, so a release can
+      # be described where it is created. Falls back to a generic line for a lightweight tag.
+      - name: Get comment
+        id: get-comment
+        run: |
+          comment=$(git tag -n10 -l "${{ steps.get-version.outputs.version }}" | sed 's/^[0-9.]*[ ]*//g')
+          if [[ -z "${comment// }" ]]; then
+            comment="Released version ${{ steps.get-version.outputs.version }} of ai_label"
+          fi
+          {
+            echo "comment<<EOF"
+            echo "${comment}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: intl, mbstring, json, zip, curl
+
+      - name: Install tailor
+        run: composer global require typo3/tailor --prefer-dist --no-progress
+
+      - name: Publish to TER
+        run: >
+          php ~/.composer/vendor/bin/tailor ter:publish
+          --comment "${{ steps.get-comment.outputs.comment }}"
+          "${{ steps.get-version.outputs.version }}"

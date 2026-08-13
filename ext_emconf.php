@@ -2,7 +2,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'AI Label',
-    'description' => 'Flags backend records as AI-created / AI-modified.',
+    'description' => 'Disclose AI-generated and AI-modified content as required by Article 50 of the EU AI Act: flag records in the backend, track editorial review, and mark flagged content in the frontend.',
     'category' => 'be',
     'author' => 'b13 GmbH',
     'author_email' => 'typo3@b13.com',

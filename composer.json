@@ -1,8 +1,30 @@
 {
     "name": "b13/ai-label",
     "type": "typo3-cms-extension",
-    "description": "AI Label / Flags backend records as AI-created / AI-modified.",
+    "description": "AI Label - Disclose AI-generated and AI-modified content as required by Article 50 of the EU AI Act: flag records in the backend, track editorial review, and mark flagged content in the frontend.",
     "license": "GPL-2.0-or-later",
+    "keywords": [
+        "TYPO3 CMS",
+        "ai",
+        "ai act",
+        "compliance",
+        "transparency",
+        "disclosure",
+        "labelling"
+    ],
+    "homepage": "https://b13.com",
+    "authors": [
+        {
+            "name": "b13 GmbH",
+            "email": "typo3@b13.com",
+            "homepage": "https://b13.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/b13/ai-label/issues",
+        "source": "https://github.com/b13/ai-label"
+    },
     "require": {
         "typo3/cms-backend": "^13.4 || ^14.3",
         "typo3/cms-frontend": "^13.4 || ^14.3"

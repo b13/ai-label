@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" target-language="de" datatype="plaintext" original="messages" date="2026-08-13T00:00:00Z" product-name="ai_label">
+        <header/>
+        <body>
+            <trans-unit id="field.ai_origin">
+                <source>AI origin</source>
+                <target>KI-Herkunft</target>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.description">
+                <source>Pick "AI created" when an AI produced this content from scratch, and "AI modified" when an AI substantially changed something a person made - for example swapping a face in a photo or rewriting a paragraph. Everyday helpers such as spell-checking, autocomplete or colour correction do not count, so leave those as "No AI involvement".</source>
+                <target>Wählen Sie „Von KI erstellt“, wenn eine KI diesen Inhalt von Grund auf erzeugt hat, und „Von KI verändert“, wenn eine KI etwas von Menschen Erstelltes wesentlich verändert hat – zum Beispiel ein Gesicht in einem Foto ausgetauscht oder einen Absatz neu formuliert hat. Alltägliche Helfer wie Rechtschreibprüfung, Autovervollständigung oder Farbkorrektur zählen nicht dazu; belassen Sie es in diesen Fällen bei „Keine KI-Beteiligung“.</target>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.human">
+                <source>No AI involvement</source>
+                <target>Keine KI-Beteiligung</target>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.generated">
+                <source>AI created</source>
+                <target>Von KI erstellt</target>
+            </trans-unit>
+            <trans-unit id="field.ai_origin.manipulated">
+                <source>AI modified</source>
+                <target>Von KI verändert</target>
+            </trans-unit>
+            <trans-unit id="tabs.aiMetadata">
+                <source>AI Metadata</source>
+                <target>KI-Metadaten</target>
+            </trans-unit>
+            <trans-unit id="palette.aiMetadata.description">
+                <source>If AI was involved in creating this content, record it here. Flagged records show a small marker on the published page. For AI-generated images that could pass as real photos, and for AI-written text on matters of public interest such as politics, health or public safety, disclosing this is required by law (EU AI Act, Article 50). Everywhere else it is simply good practice.</source>
+                <target>Wenn KI an der Erstellung dieses Inhalts beteiligt war, halten Sie das hier fest. Gekennzeichnete Datensätze zeigen auf der veröffentlichten Seite eine kleine Markierung. Bei KI-erzeugten Bildern, die als echte Fotos durchgehen könnten, und bei KI-verfassten Texten zu Themen von öffentlichem Interesse wie Politik, Gesundheit oder öffentlicher Sicherheit ist diese Kennzeichnung gesetzlich vorgeschrieben (KI-Verordnung der EU, Artikel 50). In allen anderen Fällen ist sie schlicht gute Praxis.</target>
+            </trans-unit>
+            <trans-unit id="field.reviewed">
+                <source>Reviewed</source>
+                <target>Geprüft</target>
+            </trans-unit>
+            <trans-unit id="field.reviewed.description">
+                <source>Tick this once a person has genuinely read the content and checked that it is accurate - a quick glance or a spell-check is not enough. By ticking it you take responsibility for what is published. For text, the law accepts such a review instead of a public label; for images, audio and video it does not, so those stay labelled either way. This extension keeps showing the marker for every flagged record regardless, which is always the safe option. Editing a flagged record later clears the review, so the content gets checked again.</source>
+                <target>Setzen Sie diesen Haken erst, wenn eine Person den Inhalt wirklich gelesen und auf Richtigkeit geprüft hat – ein kurzer Blick oder eine Rechtschreibprüfung genügt nicht. Mit dem Haken übernehmen Sie die Verantwortung für das, was veröffentlicht wird. Bei Texten akzeptiert das Gesetz eine solche Prüfung anstelle einer öffentlichen Kennzeichnung, bei Bildern, Audio und Video hingegen nicht – diese bleiben in jedem Fall gekennzeichnet. Diese Extension zeigt die Markierung ohnehin bei jedem gekennzeichneten Datensatz an, was immer der sichere Weg ist. Wird ein gekennzeichneter Datensatz später bearbeitet, wird die Prüfung zurückgesetzt, damit der Inhalt erneut geprüft wird.</target>
+            </trans-unit>
+            <trans-unit id="notice.reviewRequired">
+                <source>Review required</source>
+                <target>Prüfung erforderlich</target>
+            </trans-unit>
+            <trans-unit id="notice.reviewedBy">
+                <source>Reviewed by %s on %s</source>
+                <target>Geprüft von %s am %s</target>
+            </trans-unit>
+            <trans-unit id="notice.fileContentChanged.title">
+                <source>AI origin check needed</source>
+                <target>KI-Herkunft prüfen</target>
+            </trans-unit>
+            <trans-unit id="notice.fileContentChanged">
+                <source>The file was replaced. Please check whether the stored AI origin is still correct.</source>
+                <target>Die Datei wurde ersetzt. Bitte prüfen Sie, ob die hinterlegte KI-Herkunft noch zutrifft.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

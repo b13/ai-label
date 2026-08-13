@@ -66,7 +66,7 @@
             "web-dir": ".Build/Web",
             "app-dir": ".Build",
             "extension-key": "ai_label",
-            "version": "0.0.1",
+            "version": "1.0.0",
             "Package": {
                 "providesPackages": {}
             }

@@ -41,12 +41,22 @@ final class AiWatermark implements LoggerAwareInterface
     // pixels to write into.
     private const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'];
 
-    // Badge width as a share of the image width, clamped - a fixed pixel size is either
-    // invisible on a 3000px hero or wider than a 150px thumbnail.
-    private const RELATIVE_WIDTH = 0.28;
-    private const MIN_WIDTH = 60;
-    private const MAX_WIDTH = 320;
+    // The badge is drawn at a constant width and is never enlarged beyond it. Scaling it
+    // with the image (the previous behaviour) meant the same picture carried a 60px marker
+    // as a thumbnail and a 320px one as a hero - the marker visibly zoomed in with the
+    // image instead of staying a discreet, consistent mark.
+    //
+    // 160px is picked to line up with the "overlay" mode: that renders at 83 CSS px, and a
+    // processed variant is typically displayed at about half its pixel width, so both modes
+    // end up looking roughly the same size on the page.
+    private const TARGET_WIDTH = 160;
+
+    // ...with the one exception of images too small to carry a 160px badge, where a constant
+    // width would swallow the picture. Only there does it shrink along with the image.
+    private const MAX_RELATIVE_WIDTH = 0.25;
+
     private const MARGIN_RATIO = 0.03;
+    private const MAX_MARGIN = 24;
 
     // Below this the badge would be unreadable anyway, and a mark nobody can read
     // discloses nothing - such images fall back to the content element marker.
@@ -104,14 +114,17 @@ final class AiWatermark implements LoggerAwareInterface
 
     private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth): bool
     {
-        $badgeWidth = (int)round($imageWidth * self::RELATIVE_WIDTH);
-        $badgeWidth = max(self::MIN_WIDTH, min(self::MAX_WIDTH, $badgeWidth));
-        $margin = max(4, (int)round($imageWidth * self::MARGIN_RATIO));
+        $badgeWidth = min(self::TARGET_WIDTH, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
+        $margin = min(self::MAX_MARGIN, max(4, (int)round($imageWidth * self::MARGIN_RATIO)));
 
         // The parenthesised group scales the badge before it is composited, so the
         // badge keeps its own aspect ratio independently of the image below it.
+        // The ">" flag means "shrink only, never enlarge", so the badge can never be
+        // blown up past the resolution of its own artwork - it has to be escaped, or
+        // the shell would read it as an output redirection.
+        $resize = CommandUtility::escapeShellArgument($badgeWidth . 'x>');
         $parameters = ImageMagickFile::fromFilePath($sourceFile)
-            . ' \( ' . ImageMagickFile::fromFilePath($badgeFile) . ' -resize ' . $badgeWidth . 'x \)'
+            . ' \( ' . ImageMagickFile::fromFilePath($badgeFile) . ' -resize ' . $resize . ' \)'
             . ' -gravity SouthEast -geometry +' . $margin . '+' . $margin . ' -composite'
             . ' ' . CommandUtility::escapeShellArgument($targetFile);
 

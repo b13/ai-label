@@ -42,6 +42,9 @@
             <trans-unit id="notice.fileContentChanged">
                 <source>The file was replaced. Please check whether the stored AI origin is still correct.</source>
             </trans-unit>
+            <trans-unit id="config.imageMarker">
+                <source>AI marker on images: how a flagged image itself is marked in the frontend, on top of the marker shown for the whole content element. "CSS layer" draws it over the image and needs no image processing, but it is gone once the image is downloaded or hotlinked. "Burned into the image" writes it into the pixels of the processed image, so it travels with the file - this needs ImageMagick and does not apply to SVGs; those keep the content element marker.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

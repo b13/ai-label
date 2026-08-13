@@ -15,6 +15,7 @@ namespace B13\AiLabel\Service;
 use B13\AiLabel\Configuration\ApplicableTablesProvider;
 use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Imaging\ProcessedFileInvalidator;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -48,6 +49,7 @@ final class AiLabelApi
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly ApplicableTablesProvider $applicableTablesProvider,
+        private readonly ProcessedFileInvalidator $processedFileInvalidator,
     ) {
     }
 
@@ -117,6 +119,15 @@ final class AiLabelApi
             'user' => $backendUser->getUserId(),
             'aiMetadata' => $aiMetadata?->toArray(),
         ]);
+
+        // The "baked" image marker mode renders the flag into the processed image files,
+        // which FAL caches on keys that don't change when only the flag does - so they
+        // have to go. Unconditional rather than diffed against the previous state: this
+        // runs only when an editor actually touched a file's AI fields, and the variants
+        // are rebuilt lazily anyway.
+        if ($table === 'sys_file_metadata') {
+            $this->processedFileInvalidator->invalidateForFileMetadata($uid);
+        }
     }
 
     private function resolveUser(?BackendUserAuthentication $user): BackendUserAuthentication

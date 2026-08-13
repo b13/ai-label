@@ -12,3 +12,21 @@
     width: var(--ai-label-icon-width, 83px);
     height: var(--ai-label-icon-height, 16px);
 }
+
+/*
+ * "overlay" image marker mode only - the wrapper is emitted by
+ * Partials/Media/Rendering/Image, and only around images that are actually flagged.
+ * It just sets the custom properties .b_ai-label already reads, so the marker moves
+ * onto the image instead of sitting below it; override --ai-label-image-inset (or the
+ * base custom properties directly) to reposition it.
+ */
+.b_ai-label-image {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+.b_ai-label-image > .b_ai-label {
+    --ai-label-position: absolute;
+    --ai-label-inset: auto var(--ai-label-image-inset, 0.5rem) var(--ai-label-image-inset, 0.5rem) auto;
+    --ai-label-margin: 0;
+}

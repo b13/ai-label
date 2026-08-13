@@ -1,0 +1,28 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:ailabel="http://typo3.org/ns/B13/AiLabel/ViewHelpers"
+      data-namespace-typo3-fluid="true"
+>
+<f:comment>
+    Overrides EXT:fluid_styled_content's own Media/Rendering/Image partial, so that a
+    flagged image can carry the AI marker on the image itself rather than only on the
+    surrounding content element.
+
+    Unlike DropIn/After/All.html - an extension point Core ships intentionally empty -
+    this overrides a partial that has real content, so the <f:media> call below is a
+    verbatim copy of Core's and has to be kept in sync when Core changes it. It is
+    identical on v13.4 and v14; only the file name differs (Image.html vs
+    Image.fluid.html), which is why this file exists twice.
+
+    Nothing is wrapped unless the image marker mode is "overlay" AND the image is
+    actually flagged - in every other case this renders byte-for-byte what Core would
+    have rendered, including in "baked" mode, where the marker is already in the pixels.
+</f:comment>
+<f:variable name="renderedImage"><f:media class="image-embed-item" file="{file}" width="{dimensions.width}" height="{dimensions.height}" alt="{file.alternative}" title="{file.title}" loading="{settings.media.lazyLoading}" decoding="{settings.media.imageDecoding}" /></f:variable>
+<f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
+<f:if condition="{aiMetadata.flagged} && {ailabel:imageMarkerMode()} == 'overlay'">
+    <f:then>
+        <span class="b_ai-label-image">{renderedImage -> f:format.raw()}<f:render partial="AiLabel" arguments="{file: file}"/></span>
+    </f:then>
+    <f:else>{renderedImage -> f:format.raw()}</f:else>
+</f:if>
+</html>

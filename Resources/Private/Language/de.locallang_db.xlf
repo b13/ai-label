@@ -55,6 +55,10 @@
                 <source>The file was replaced. Please check whether the stored AI origin is still correct.</source>
                 <target>Die Datei wurde ersetzt. Bitte prüfen Sie, ob die hinterlegte KI-Herkunft noch zutrifft.</target>
             </trans-unit>
+            <trans-unit id="config.imageMarker">
+                <source>AI marker on images: how a flagged image itself is marked in the frontend, on top of the marker shown for the whole content element. "CSS layer" draws it over the image and needs no image processing, but it is gone once the image is downloaded or hotlinked. "Burned into the image" writes it into the pixels of the processed image, so it travels with the file - this needs ImageMagick and does not apply to SVGs; those keep the content element marker.</source>
+                <target>KI-Markierung auf Bildern: wie ein gekennzeichnetes Bild selbst im Frontend markiert wird, zusätzlich zur Markierung des gesamten Inhaltselements. „CSS-Ebene“ legt sie über das Bild und benötigt keine Bildbearbeitung, ist aber verschwunden, sobald das Bild heruntergeladen oder direkt verlinkt wird. „In das Bild eingebrannt“ schreibt sie in die Pixel des bearbeiteten Bildes, sodass sie mit der Datei mitwandert – das setzt ImageMagick voraus und gilt nicht für SVGs; diese behalten die Markierung des Inhaltselements.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

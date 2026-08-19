@@ -1,0 +1,7 @@
+be_users
+,uid,pid,username,admin
+,42,0,"editor42",0
+
+sys_history
+,uid,tablename,recuid,actiontype,userid,usertype,tstamp
+,1,"tt_content",201,1,42,"BE",1000

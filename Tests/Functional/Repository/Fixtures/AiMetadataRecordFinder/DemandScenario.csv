@@ -1,0 +1,17 @@
+tt_content
+,uid,pid,header,tx_ailabel_metadata
+,201,1,"Alpha banner","{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
+,202,1,"Beta banner","{""origin"":2,""reviewed_by"":1,""reviewed_timestamp"":1000}"
+,203,1,"Gamma text","{""origin"":1,""reviewed_by"":2,""reviewed_timestamp"":2000}"
+
+sys_file_storage
+,uid,pid,name,driver,configuration,is_online,is_browsable,is_public,auto_extract_metadata
+,1,0,"fileadmin/","Local","<?xml version=""1.0"" encoding=""utf-8"" standalone=""yes"" ?><T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""basePath""><value index=""vDEF"">fileadmin/</value></field><field index=""pathType""><value index=""vDEF"">relative</value></field></language></sheet></data></T3FlexForms>",1,1,1,0
+
+sys_file
+,uid,pid,storage,identifier,identifier_hash,folder_hash,extension,mime_type,name,sha1,size,type
+,1,0,1,/flagged.txt,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",txt,text/plain,flagged.txt,"cccccccccccccccccccccccccccccccccccccccc",0,2
+
+sys_file_metadata
+,uid,pid,file,tx_ailabel_metadata
+,301,0,1,"{""origin"":2,""reviewed_by"":0,""reviewed_timestamp"":0}"

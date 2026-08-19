@@ -1,0 +1,50 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<form action="{f:be.uri(route:'web_ai_label_overview')}" method="post" enctype="multipart/form-data" name="demand">
+    <input type="hidden" name="orderField" value="{demand.orderField}">
+    <input type="hidden" name="orderDirection" value="{demand.orderDirection}">
+    <div class="form-row">
+        <div class="form-group">
+            <label for="demand-table" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.table" /></label>
+            <select id="demand-table" class="form-select" name="demand[table]" data-on-change="submit">
+                <option value=""><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.showAll" /></option>
+                <f:for each="{tables}" as="tableOption">
+                    <option value="{tableOption.value}" {f:if(condition: '{tableOption.value} == {demand.table}', then: 'selected')}>{tableOption.label}</option>
+                </f:for>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="demand-origin" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.origin" /></label>
+            <select id="demand-origin" class="form-select" name="demand[origin]" data-on-change="submit">
+                <option value=""><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.showAll" /></option>
+                <option value="created" {f:if(condition: '{demand.origin} == \'created\'', then: 'selected')}><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.generated" /></option>
+                <option value="modified" {f:if(condition: '{demand.origin} == \'modified\'', then: 'selected')}><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.manipulated" /></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="demand-review-status" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.reviewStatus" /></label>
+            <select id="demand-review-status" class="form-select" name="demand[review_status]" data-on-change="submit">
+                <option value=""><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.showAll" /></option>
+                <option value="required" {f:if(condition: '{demand.reviewStatus} == \'required\'', then: 'selected')}><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.reviewStatus.required" /></option>
+                <option value="reviewed" {f:if(condition: '{demand.reviewStatus} == \'reviewed\'', then: 'selected')}><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.reviewStatus.reviewed" /></option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="demand-search" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.search" /></label>
+            <input
+                type="text"
+                id="demand-search"
+                class="form-control"
+                name="demand[search]"
+                value="{demand.search}"
+                placeholder="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.search.placeholder')}"
+            />
+        </div>
+        <div class="form-group align-self-end">
+            <input type="submit" value="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:filter.submit')}" class="btn btn-default" />
+            <a href="{f:be.uri(route:'web_ai_label_overview')}" class="btn btn-link"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:filter.reset" /></a>
+        </div>
+    </div>
+</form>
+
+</html>

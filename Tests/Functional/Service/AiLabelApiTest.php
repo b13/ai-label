@@ -15,6 +15,7 @@ namespace B13\AiLabel\Tests\Functional\Service;
 use B13\AiLabel\Service\AiLabelApi;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 final class AiLabelApiTest extends FunctionalTestCase
@@ -39,6 +40,24 @@ final class AiLabelApiTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/Fixtures/be_users.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/pages.csv');
         $this->backendUser = $GLOBALS['BE_USER'] = $this->setUpBackendUser(1);
+    }
+
+    #[Test]
+    public function isReachableViaMakeInstanceForOptionalIntegrationsOutsideThisExtensionsOwnDiGraph(): void
+    {
+        // Regression test: this service must be public. An optional integration
+        // living outside ai_label's own DI graph (e.g. aim's AiLabelMiddleware)
+        // can only ever reach it via GeneralUtility::makeInstance(), never
+        // constructor injection. If the service isn't public, the container
+        // silently falls through to a bare `new AiLabelApi()` missing all 3
+        // constructor args, which throws ArgumentCountError here instead of
+        // returning a working instance - previously the actual, silently
+        // swallowed cause of a real bug (see git history).
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/AiLabelApi/FlaggedAndReviewedRecord.csv');
+
+        GeneralUtility::makeInstance(AiLabelApi::class)->aiModified('tt_content', 1, $this->backendUser);
+
+        self::assertCSVDataSet(__DIR__ . '/Fixtures/AiLabelApi/AiModifiedResetsReviewResult.csv');
     }
 
     #[Test]

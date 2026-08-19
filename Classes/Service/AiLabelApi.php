@@ -17,6 +17,7 @@ use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Imaging\ProcessedFileInvalidator;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -44,6 +45,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * tight pre-filter (a few never-actually-flagged rows may pass it and get discarded
  * in PHP afterwards).
  */
+#[Autoconfigure(public: true)]
 final class AiLabelApi
 {
     public function __construct(

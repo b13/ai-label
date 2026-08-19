@@ -8,76 +8,32 @@
 <f:layout name="Module" />
 
 <f:section name="Content">
+    <f:be.pageRenderer
+        includeCssFiles="{0: 'EXT:ai_label/Resources/Public/Css/ai-label.css'}"
+        includeJavaScriptModules="{0: '@typo3/backend/context-menu.js'}"
+    />
 
-    <h1><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab" /></h1>
-
-    <f:if condition="{paginator.paginatedItems}">
+    <f:if condition="{statistics.total}">
         <f:then>
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.table" /></th>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.title" /></th>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.origin" /></th>
-                        <th><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.reviewed" /></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <f:for each="{paginator.paginatedItems}" as="record">
-                        <tr>
-                            <td>{record.table}</td>
-                            <td>
-                                <be:link.editRecord uid="{record.uid}" table="{record.table}">
-                                    <f:if condition="{record.title}">
-                                        <f:then>{record.title}</f:then>
-                                        <f:else>{record.table} #{record.uid}</f:else>
-                                    </f:if>
-                                </be:link.editRecord>
-                            </td>
-                            <td>
-                                <f:if condition="{record.metadata.aiCreated}">
-                                    <f:then><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.generated" /></f:then>
-                                    <f:else><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.ai_origin.manipulated" /></f:else>
-                                </f:if>
-                            </td>
-                            <td>
-                                <f:format.raw>{record.reviewBadge}</f:format.raw>
-                            </td>
-                        </tr>
-                    </f:for>
-                </tbody>
-            </table>
+            <f:render partial="Overview/Stats" arguments="{statistics: statistics}" />
+            <f:render partial="Overview/Filters" arguments="{_all}" />
 
-            <f:if condition="{pagination.lastPageNumber} > 1">
-                <nav aria-label="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.pagination')}">
-                    <ul class="pagination">
-                        <li class="page-item {f:if(condition: '{previousPageUri}', else: 'disabled')}">
-                            <f:if condition="{previousPageUri}">
-                                <f:then>
-                                    <a class="page-link" href="{previousPageUri}"><core:icon identifier="actions-caret-left" /></a>
-                                </f:then>
-                                <f:else>
-                                    <span class="page-link"><core:icon identifier="actions-caret-left" /></span>
-                                </f:else>
-                            </f:if>
-                        </li>
-                        <f:for each="{pageUris}" as="pageUri" key="pageNumber">
-                            <li class="page-item {f:if(condition: '{pageNumber} == {paginator.currentPageNumber}', then: 'active')}">
-                                <a class="page-link" href="{pageUri}">{pageNumber}</a>
-                            </li>
-                        </f:for>
-                        <li class="page-item {f:if(condition: '{nextPageUri}', else: 'disabled')}">
-                            <f:if condition="{nextPageUri}">
-                                <f:then>
-                                    <a class="page-link" href="{nextPageUri}"><core:icon identifier="actions-caret-right" /></a>
-                                </f:then>
-                                <f:else>
-                                    <span class="page-link"><core:icon identifier="actions-caret-right" /></span>
-                                </f:else>
-                            </f:if>
-                        </li>
-                    </ul>
-                </nav>
+            <f:if condition="{paginator.paginatedItems}">
+                <f:then>
+                    <f:render partial="Overview/Table" arguments="{_all}" />
+                    <f:render partial="Pagination" arguments="{paginator: paginator, pagination: pagination, baseUrl: paginationBaseUrl}" />
+                </f:then>
+                <f:else>
+                    <f:be.infobox
+                        title="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.noEntries.title')}"
+                        state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}"
+                    >
+                        <p><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.noEntries.filtered" /></p>
+                        <a href="{f:be.uri(route: 'web_ai_label_overview')}" class="btn btn-default">
+                            <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:filter.reset" />
+                        </a>
+                    </f:be.infobox>
+                </f:else>
             </f:if>
         </f:then>
         <f:else>

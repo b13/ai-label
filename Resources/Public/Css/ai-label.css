@@ -30,3 +30,14 @@
     display: flex;
     justify-content: flex-end;
 }
+
+/* Without this, plain table auto-layout stretches every column roughly evenly
+   across the full container width, leaving a large empty gap after the last
+   (narrow-content) column instead of giving that space to the Record column,
+   which is the one actually meant to grow. Shrinking every column but the
+   first to its content width redirects all leftover space there instead. */
+.ailabel-overview-table th:nth-child(n+2),
+.ailabel-overview-table td:nth-child(n+2) {
+    width: 1%;
+    white-space: nowrap;
+}

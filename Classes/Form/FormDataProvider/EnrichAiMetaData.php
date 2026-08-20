@@ -36,6 +36,18 @@ final class EnrichAiMetaData implements FormDataProviderInterface
         $result['databaseRow']['tx_ailabel_origin'] = $metadata->getOrigin()->value;
         $result['databaseRow']['tx_ailabel_reviewed'] = (int)$metadata->isReviewed();
 
+        if (is_array($result['defaultLanguageRow'] ?? null)) {
+            $defaultMetadata = AiMetadata::fromJsonString($result['defaultLanguageRow']['tx_ailabel_metadata'] ?? null);
+            $result['defaultLanguageRow']['tx_ailabel_origin'] = $defaultMetadata->getOrigin()->value;
+            $result['defaultLanguageRow']['tx_ailabel_reviewed'] = (int)$defaultMetadata->isReviewed();
+        }
+
+        foreach ($result['additionalLanguageRows'] ?? [] as $uid => $langRow) {
+            $langMetadata = AiMetadata::fromJsonString($langRow['tx_ailabel_metadata'] ?? null);
+            $result['additionalLanguageRows'][$uid]['tx_ailabel_origin'] = $langMetadata->getOrigin()->value;
+            $result['additionalLanguageRows'][$uid]['tx_ailabel_reviewed'] = (int)$langMetadata->isReviewed();
+        }
+
         return $result;
     }
 }

@@ -105,11 +105,7 @@ final class FlagAiContentMiddlewareTest extends FunctionalTestCase
 
         $this->get(FlagAiContentMiddleware::class)->process($request, self::createStub(AiProviderInterface::class), $config, $next);
 
-        self::assertSame(
-            '{"origin":1,"reviewed_by":0,"reviewed_timestamp":0}',
-            $this->getConnectionPool()->getConnectionForTable('tt_content')
-                ->select(['tx_ailabel_metadata'], 'tt_content', ['uid' => $this->contentUid])->fetchOne(),
-        );
+        self::assertSame(['origin' => 1, 'reviewed_by' => 0, 'reviewed_timestamp' => 0], $this->fetchMetadata());
     }
 
     #[Test]
@@ -124,11 +120,7 @@ final class FlagAiContentMiddlewareTest extends FunctionalTestCase
 
         $this->get(FlagAiContentMiddleware::class)->process($request, self::createStub(AiProviderInterface::class), $config, $next);
 
-        self::assertSame(
-            '{"origin":2,"reviewed_by":0,"reviewed_timestamp":0}',
-            $this->getConnectionPool()->getConnectionForTable('tt_content')
-                ->select(['tx_ailabel_metadata'], 'tt_content', ['uid' => $this->contentUid])->fetchOne(),
-        );
+        self::assertSame(['origin' => 2, 'reviewed_by' => 0, 'reviewed_timestamp' => 0], $this->fetchMetadata());
     }
 
     #[Test]
@@ -203,11 +195,7 @@ final class FlagAiContentMiddlewareTest extends FunctionalTestCase
         $middleware = $this->get(FlagAiContentMiddleware::class);
         (new \ReflectionMethod($middleware, 'applyLabelForDrainedStream'))->invoke($middleware, $streamIterator, $this->aiLabelTarget());
 
-        self::assertSame(
-            '{"origin":1,"reviewed_by":0,"reviewed_timestamp":0}',
-            $this->getConnectionPool()->getConnectionForTable('tt_content')
-                ->select(['tx_ailabel_metadata'], 'tt_content', ['uid' => $this->contentUid])->fetchOne(),
-        );
+        self::assertSame(['origin' => 1, 'reviewed_by' => 0, 'reviewed_timestamp' => 0], $this->fetchMetadata());
     }
 
     #[Test]
@@ -249,5 +237,21 @@ final class FlagAiContentMiddlewareTest extends FunctionalTestCase
         $result = $this->get(FlagAiContentMiddleware::class)->process($request, self::createStub(AiProviderInterface::class), $config, $next);
 
         self::assertSame($response, $result);
+    }
+
+    /**
+     * Decoded rather than compared as a raw string: MySQL's native JSON
+     * column type normalizes the stored value with spaces after colons/
+     * commas on read-back, while sqlite returns it exactly as written
+     * (compact, no spaces) - comparing the decoded structure is the only
+     * assertion that holds across both.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function fetchMetadata(): ?array
+    {
+        $raw = $this->getConnectionPool()->getConnectionForTable('tt_content')
+            ->select(['tx_ailabel_metadata'], 'tt_content', ['uid' => $this->contentUid])->fetchOne();
+        return is_string($raw) ? json_decode($raw, true) : null;
     }
 }

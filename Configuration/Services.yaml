@@ -9,6 +9,12 @@ services:
     exclude:
       - '../Classes/Domain/Model/*'
       - '../Classes/Domain/Enum/*'
+      # Implements B13\Aim\Middleware\AiMiddlewareInterface - excluded from
+      # the normal resource scan so Symfony's container compilation never
+      # reflects (and therefore never needs to autoload/resolve that
+      # interface for) this class when b13/aim isn't installed. Registered
+      # manually, conditionally, in Configuration/Services.php instead.
+      - '../Classes/Middleware/FlagAiContentMiddleware.php'
 
   B13\AiLabel\DataProcessing\AiLabelProcessor:
     tags:

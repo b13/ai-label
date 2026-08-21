@@ -31,7 +31,8 @@
     },
     "suggest": {
         "typo3/cms-fluid-styled-content": "Automatically renders the AI label on every content element via a DropIn/After/All.html override",
-        "typo3/cms-filelist": "Shows AI-label badges for flagged files in the File > Filelist backend module"
+        "typo3/cms-filelist": "Shows AI-label badges for flagged files in the File > Filelist backend module",
+        "b13/aim": "Enables FlagAiContentMiddleware, which automatically flags a record as AI-created/AI-modified once an aim request opts in via metadata"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -41,7 +42,8 @@
         "typo3/coding-standards": "^0.5.5",
         "typo3/cms-workspaces": "^13.4 || ^14.3",
         "typo3/cms-filelist": "^13.4 || ^14.3",
-        "typo3/cms-fluid-styled-content": "^13.4 || ^14.3"
+        "typo3/cms-fluid-styled-content": "^13.4 || ^14.3",
+        "b13/aim": "*"
     },
     "config": {
         "vendor-dir": ".Build/vendor",

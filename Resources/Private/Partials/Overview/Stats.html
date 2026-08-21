@@ -1,0 +1,71 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4">
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-body-secondary text-uppercase small">
+                        <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.total" />
+                    </span>
+                    <span data-bs-toggle="popover" data-bs-placement="auto" data-bs-trigger="hover focus" data-bs-content="{f:translate(key:'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.total.info')}">
+                        <core:icon identifier="actions-info-circle" size="small" />
+                    </span>
+                </div>
+                <div class="fs-3 fw-bold">{statistics.total -> f:format.number(decimals: 0, thousandsSeparator: ',')}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-body-secondary text-uppercase small">
+                        <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.created" />
+                    </span>
+                    <span data-bs-toggle="popover" data-bs-placement="auto" data-bs-trigger="hover focus" data-bs-content="{f:translate(key:'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.created.info')}">
+                        <core:icon identifier="actions-info-circle" size="small" />
+                    </span>
+                </div>
+                <div class="fs-3 fw-bold">{statistics.created -> f:format.number(decimals: 0, thousandsSeparator: ',')}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-body-secondary text-uppercase small">
+                        <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.modified" />
+                    </span>
+                    <span data-bs-toggle="popover" data-bs-placement="auto" data-bs-trigger="hover focus" data-bs-content="{f:translate(key:'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.modified.info')}">
+                        <core:icon identifier="actions-info-circle" size="small" />
+                    </span>
+                </div>
+                <div class="fs-3 fw-bold">{statistics.modified -> f:format.number(decimals: 0, thousandsSeparator: ',')}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card h-100 {f:if(condition: '{statistics.reviewRequired} > 0', then: 'border-warning')}">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-body-secondary text-uppercase small">
+                        <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.reviewRequired" />
+                    </span>
+                    <span data-bs-toggle="popover" data-bs-placement="auto" data-bs-trigger="hover focus" data-bs-content="{f:translate(key:'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.stats.reviewRequired.info')}">
+                        <core:icon identifier="actions-info-circle" size="small" />
+                    </span>
+                </div>
+                <div class="fs-3 fw-bold {f:if(condition: '{statistics.reviewRequired} > 0', then: 'text-warning')}">{statistics.reviewRequired -> f:format.number(decimals: 0, thousandsSeparator: ',')}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

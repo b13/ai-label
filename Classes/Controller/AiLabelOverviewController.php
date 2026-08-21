@@ -12,23 +12,25 @@ namespace B13\AiLabel\Controller;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Backend\SortUrlBuilder;
+use B13\AiLabel\Domain\Repository\AiLabelDemand;
 use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
+use B13\AiLabel\Pagination\DemandedArrayPaginator;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\Components\Buttons\Action\ShortcutButton;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Page\PageRenderer;
-use TYPO3\CMS\Core\Pagination\ArrayPaginator;
-use TYPO3\CMS\Core\Pagination\SlidingWindowPagination;
+use TYPO3\CMS\Core\Pagination\SimplePagination;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[AsController]
 final class AiLabelOverviewController
 {
-    private const ITEMS_PER_PAGE = 25;
-    private const MAX_NUMBER_OF_LINKS = 7;
     private const MODULE_IDENTIFIER = 'web_ai_label_overview';
 
     public function __construct(
@@ -36,58 +38,81 @@ final class AiLabelOverviewController
         private readonly AiMetadataRecordFinder $recordFinder,
         private readonly AiMetadataBadgeFactory $badgeFactory,
         private readonly UriBuilder $uriBuilder,
-        private readonly PageRenderer $pageRenderer,
+        private readonly SortUrlBuilder $sortUrlBuilder,
     ) {
     }
 
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
-        $this->pageRenderer->addCssFile('EXT:ai_label/Resources/Public/Css/ai-label.css');
-        $currentPageNumber = max(1, (int)($request->getQueryParams()['currentPage'] ?? 1));
+        $view = $this->moduleTemplateFactory->create($request);
+        $languageService = $this->getLanguageService();
+        $view->setTitle($languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab'));
 
-        $returnUrl = (string)$request->getUri();
-        $records = array_map(
-            fn (array $record) => [
+        $shortcutButton = GeneralUtility::makeInstance(ShortcutButton::class)
+            ->setRouteIdentifier(self::MODULE_IDENTIFIER)
+            ->setDisplayName($languageService->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab'));
+        $view->getDocHeaderComponent()->getButtonBar()->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
+
+        $demand = AiLabelDemand::fromRequest($request);
+        $allRecords = $this->recordFinder->findFlaggedRecords();
+        $statistics = $this->recordFinder->calculateStatistics($allRecords);
+        $tables = $this->recordFinder->getDistinctTables($allRecords);
+
+        $matchingRecords = $this->recordFinder->filterAndSort($allRecords, $demand);
+        $totalCount = count($matchingRecords);
+        $pageItems = array_slice($matchingRecords, ($demand->getPage() - 1) * $demand->getLimit(), $demand->getLimit());
+
+        $returnUrl = $this->buildOverviewUrl($demand);
+        $pageItems = array_map(
+            fn (array $record): array => [
                 ...$record,
                 'reviewBadge' => $this->badgeFactory->getBadge($record['metadata'], $this->buildEditUrl($record['table'], $record['uid'], $returnUrl)),
             ],
-            $this->recordFinder->findFlaggedRecords()
+            $pageItems,
         );
 
-        $paginator = new ArrayPaginator($records, $currentPageNumber, self::ITEMS_PER_PAGE);
-        $pagination = new SlidingWindowPagination($paginator, self::MAX_NUMBER_OF_LINKS);
+        $paginator = new DemandedArrayPaginator($pageItems, $demand->getPage(), $demand->getLimit(), $totalCount);
+        $pagination = new SimplePagination($paginator);
+        $paginationBaseUrl = (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER, $this->demandToRouteParams($demand));
 
-        $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $moduleTemplate->setTitle(
-            $this->getLanguageService()->sL('LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab')
-        );
-        $moduleTemplate->assignMultiple([
+        $view->assignMultiple([
+            'demand' => $demand,
+            // Filters are submitted via POST (Overview/Filters.html), so they never
+            // show up in the request's own URI. It must be rebuilt from the parsed
+            // demand instead, the same way $paginationBaseUrl is.
+            'returnUrl' => $returnUrl,
+            'paginationBaseUrl' => $paginationBaseUrl,
+            'sortUrls' => $this->sortUrlBuilder->build($demand, self::MODULE_IDENTIFIER),
             'paginator' => $paginator,
             'pagination' => $pagination,
-            'pageUris' => $this->buildPageUris($pagination),
-            'previousPageUri' => $this->buildPageUri($pagination->getPreviousPageNumber()),
-            'nextPageUri' => $this->buildPageUri($pagination->getNextPageNumber()),
+            'statistics' => $statistics,
+            'tables' => $tables,
         ]);
 
-        return $moduleTemplate->renderResponse('Overview/Index');
+        return $view->renderResponse('Overview/Index');
     }
 
-    /** @return array<int, string> */
-    private function buildPageUris(SlidingWindowPagination $pagination): array
+    /**
+     * @return array<string, string>
+     */
+    private function demandToRouteParams(AiLabelDemand $demand): array
     {
-        $uris = [];
-        foreach ($pagination->getAllPageNumbers() as $pageNumber) {
-            $uris[$pageNumber] = (string)$this->buildPageUri($pageNumber);
+        $params = [
+            'orderField' => $demand->getOrderField(),
+            'orderDirection' => $demand->getOrderDirection(),
+        ];
+        foreach ($demand->getParameters() as $key => $value) {
+            $params['demand[' . $key . ']'] = $value;
         }
-        return $uris;
+        return $params;
     }
 
-    private function buildPageUri(?int $pageNumber): ?string
+    private function buildOverviewUrl(AiLabelDemand $demand): string
     {
-        if ($pageNumber === null) {
-            return null;
-        }
-        return (string)$this->uriBuilder->buildUriFromRoute(self::MODULE_IDENTIFIER, ['currentPage' => $pageNumber]);
+        return (string)$this->uriBuilder->buildUriFromRoute(
+            self::MODULE_IDENTIFIER,
+            array_merge($this->demandToRouteParams($demand), ['page' => $demand->getPage()]),
+        );
     }
 
     private function buildEditUrl(string $table, int $uid, string $returnUrl): string

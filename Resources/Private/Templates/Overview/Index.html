@@ -13,6 +13,17 @@
         includeJavaScriptModules="{0: '@typo3/backend/context-menu.js'}"
     />
 
+    <f:comment>
+        Passed to f:be.infobox as ".value" (the plain int), not as the enum case itself:
+        on v13.4 InfoboxViewHelper registers "state" as type "int", so handing it the
+        enum object makes Fluid's argument validation throw
+        (InvalidArgumentException 1256475113) before render() is ever reached. Only v14
+        widened that argument to "mixed" and accepts a ContextualFeedbackSeverity. The
+        int is valid on both. InfoboxViewHelper::STATE_* would work too, but those
+        constants are deprecated since v14 and go away in v15.
+    </f:comment>
+    <f:variable name="severityInfo" value="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}" />
+
     <f:if condition="{statistics.total}">
         <f:then>
             <f:render partial="Overview/Stats" arguments="{statistics: statistics}" />
@@ -26,7 +37,7 @@
                 <f:else>
                     <f:be.infobox
                         title="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.noEntries.title')}"
-                        state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}"
+                        state="{severityInfo.value}"
                     >
                         <p><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.noEntries.filtered" /></p>
                         <a href="{f:be.uri(route: 'web_ai_label_overview')}" class="btn btn-default">
@@ -39,7 +50,7 @@
         <f:else>
             <f:be.infobox
                 title="{f:translate(key: 'LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.empty.title')}"
-                state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}"
+                state="{severityInfo.value}"
             >
                 <f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.empty.message" />
             </f:be.infobox>

@@ -45,6 +45,51 @@
             <trans-unit id="config.imageMarker">
                 <source>AI marker on images: how a flagged image itself is marked in the frontend, on top of the marker shown for the whole content element. "CSS layer" draws it over the image and needs no image processing, but it is gone once the image is downloaded or hotlinked. "Burned into the image" writes it into the pixels of the processed image, so it travels with the file - this needs ImageMagick and does not apply to SVGs; those keep the content element marker.</source>
             </trans-unit>
+            <trans-unit id="config.watermarkPosition">
+                <source>Default corner for the badge burned into the image ("Burned into the image" mode only). Can be overridden per file. Bottom right matches the previous, fixed behaviour.</source>
+            </trans-unit>
+            <trans-unit id="config.watermarkColor">
+                <source>Default color of the badge burned into the image ("Burned into the image" mode only). Can be overridden per file. Black matches the previous, fixed behaviour.</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position">
+                <source>Watermark position</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.description">
+                <source>Overrides the global default corner for the badge burned into this file's processed images. Leave as "Inherit global setting" to use the site-wide default.</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.inherit">
+                <source>Inherit global setting</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.top_left">
+                <source>Top left</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.top_right">
+                <source>Top right</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.bottom_left">
+                <source>Bottom left</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_position.bottom_right">
+                <source>Bottom right</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_color">
+                <source>Watermark color</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_color.description">
+                <source>Overrides the global default color for the badge burned into this file's processed images. Leave as "Inherit global setting" to use the site-wide default.</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_color.inherit">
+                <source>Inherit global setting</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_color.black">
+                <source>Black</source>
+            </trans-unit>
+            <trans-unit id="field.watermark_color.white">
+                <source>White</source>
+            </trans-unit>
+            <trans-unit id="palette.aiLabelWatermark.description">
+                <source>Only relevant when "Burned into the image" is the active AI marker mode. Overrides the site-wide default for this file only.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

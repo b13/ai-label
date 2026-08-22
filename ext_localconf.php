@@ -19,11 +19,27 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['formDataGroup']['tcaDatabaseRe
         ],
     ];
 
+// Same as above, for tx_ailabel_watermark_position / tx_ailabel_watermark_color on
+// sys_file_metadata (only present in TCA at all in "baked" mode, see
+// AddWatermarkFieldsToTca).
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['formDataGroup']['tcaDatabaseRecord']
+    [\B13\AiLabel\Form\FormDataProvider\EnrichWatermarkOverride::class] = [
+        'depends' => [
+            \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseEditRow::class,
+            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaJson::class,
+        ],
+    ];
+
 // Fold tx_ailabel_origin / tx_ailabel_reviewed into the tx_ailabel_metadata JSON
 // column instead of writing them to their own (non-existent) columns. No PSR-14
 // replacement exists for this yet, this hook is still the supported extension point.
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][]
     = \B13\AiLabel\Hooks\AiMetaDataHandlerHook::class;
+
+// Fold tx_ailabel_watermark_position / tx_ailabel_watermark_color into the
+// tx_ailabel_watermark JSON column, same mechanism as above.
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['processDatamapClass'][]
+    = \B13\AiLabel\Hooks\AiWatermarkOverrideHandlerHook::class;
 
 // Renders "tx_ailabel_reviewed" as a normal checkboxToggle field, without TYPO3
 // auto-creating a real database column for it (that only happens for type=check).

@@ -1,2 +1,8 @@
 # cat=basic//10; type=options[Off - only the content element marker=off,CSS layer over the image=overlay,Burned into the processed image file=baked]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.imageMarker
 imageMarker = off
+
+# cat=basic//20; type=options[Top left=top-left,Top right=top-right,Bottom left=bottom-left,Bottom right=bottom-right]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.watermarkPosition
+watermarkPosition = bottom-right
+
+# cat=basic//30; type=options[Black=black,White=white]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.watermarkColor
+watermarkColor = black

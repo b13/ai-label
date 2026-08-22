@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Resource\ProcessedFile;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 final class AiWatermarkTest extends FunctionalTestCase
@@ -34,6 +35,18 @@ final class AiWatermarkTest extends FunctionalTestCase
         'typo3conf/ext/ai_label',
     ];
 
+    // Needed for AiWatermarkProcessor::canProcessTask() to engage in the full
+    // $file->process() tests below - mode is read at bootstrap, too early for a
+    // $GLOBALS override in a test method. Safe for the other tests, which don't
+    // depend on the mode.
+    protected array $configurationToUseInTestInstance = [
+        'EXTENSIONS' => [
+            'ai_label' => [
+                'imageMarker' => 'baked',
+            ],
+        ],
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,10 +55,19 @@ final class AiWatermarkTest extends FunctionalTestCase
         // on their metadata, not their content.
         copy(__DIR__ . '/Fixtures/flagged.jpg', Environment::getPublicPath() . '/fileadmin/flagged.jpg');
         copy(__DIR__ . '/Fixtures/flagged.jpg', Environment::getPublicPath() . '/fileadmin/plain.jpg');
+        // Only the DB is truncated between methods, not the filesystem - a stale
+        // processed variant would otherwise get double-watermarked.
+        GeneralUtility::rmdir(Environment::getPublicPath() . '/fileadmin/_processed_', true);
         // appliesTo() refuses to mark anything unless a usable processor is configured;
         // the tests that assert the positive case need this to be the case.
         $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_enabled'] = true;
         $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
+        // core's default processor_path doesn't hold on every machine (e.g. Homebrew).
+        $convertPath = trim((string)shell_exec('command -v convert'));
+        if ($convertPath !== '') {
+            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = dirname($convertPath) . '/';
+            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path_lzw'] = dirname($convertPath) . '/';
+        }
     }
 
     /**
@@ -124,6 +146,144 @@ final class AiWatermarkTest extends FunctionalTestCase
         $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'GraphicsMagick';
         $file = $this->get(ResourceFactory::class)->getFileObject(1);
         self::assertFalse($this->get(AiWatermark::class)->appliesTo($file));
+    }
+
+    // Downscales the region to 4x4 and averages it - smooths text/background pixels
+    // into one brightness figure, robust to the exact glyph layout.
+    private function averageBrightness(string $filePath, int $x, int $y, int $width, int $height): float
+    {
+        $source = imagecreatefromstring((string)file_get_contents($filePath));
+        $thumbnail = imagecreatetruecolor(4, 4);
+        imagecopyresampled($thumbnail, $source, 0, 0, $x, $y, 4, 4, $width, $height);
+
+        $total = 0.0;
+        for ($thumbnailY = 0; $thumbnailY < 4; $thumbnailY++) {
+            for ($thumbnailX = 0; $thumbnailX < 4; $thumbnailX++) {
+                $colors = imagecolorsforindex($thumbnail, imagecolorat($thumbnail, $thumbnailX, $thumbnailY));
+                $total += ($colors['red'] + $colors['green'] + $colors['blue']) / 3;
+            }
+        }
+
+        // imagedestroy() is a no-op (deprecated) since PHP 8.0 - GD frees these itself.
+        return $total / 16;
+    }
+
+    // Tightly interior to the "ai_generated" badge's bounding box on a 600px-wide
+    // variant (badge width 150, margin 18, height ~29) - avoids diluting the
+    // average with the surrounding, untouched photo.
+    private function topLeftCornerBrightness(string $filePath): float
+    {
+        return $this->averageBrightness($filePath, 30, 22, 125, 18);
+    }
+
+    private function bottomRightCornerBrightness(string $filePath): float
+    {
+        return $this->averageBrightness($filePath, 445, 408, 125, 17);
+    }
+
+    private function processedFilePath(int $fileUid): string
+    {
+        $file = $this->get(ResourceFactory::class)->getFileObject($fileUid);
+        $processedFile = $file->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600]);
+        return $processedFile->getForLocalProcessing(false);
+    }
+
+    #[Test]
+    public function badgeDefaultsToBottomRightAndBlackWhenNothingIsConfigured(): void
+    {
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        // A black badge darkens the (originally light tan) bottom-right corner.
+        self::assertLessThan(
+            $this->bottomRightCornerBrightness($plain) - 5,
+            $this->bottomRightCornerBrightness($flagged)
+        );
+        self::assertEqualsWithDelta(
+            $this->topLeftCornerBrightness($plain),
+            $this->topLeftCornerBrightness($flagged),
+            2.0,
+            'The top-left corner should stay untouched when the badge is bottom right.'
+        );
+    }
+
+    #[Test]
+    public function badgeMovesToTheConfiguredGlobalPosition(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkPosition'] = 'top-left';
+
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        self::assertLessThan(
+            $this->topLeftCornerBrightness($plain) - 5,
+            $this->topLeftCornerBrightness($flagged)
+        );
+        self::assertEqualsWithDelta(
+            $this->bottomRightCornerBrightness($plain),
+            $this->bottomRightCornerBrightness($flagged),
+            2.0,
+            'The bottom-right corner should stay untouched once the badge moved to top-left.'
+        );
+    }
+
+    #[Test]
+    public function badgeUsesTheConfiguredGlobalColor(): void
+    {
+        // Also moved to top-left, to observe the color against a darker background.
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkPosition'] = 'top-left';
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = 'white';
+
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        self::assertGreaterThan(
+            $this->topLeftCornerBrightness($plain) + 5,
+            $this->topLeftCornerBrightness($flagged)
+        );
+    }
+
+    #[Test]
+    public function perFileOverrideBeatsTheGlobalDefault(): void
+    {
+        // Global stays default (bottom-right, black); Doctrine encodes the array
+        // itself for the json column - pre-encoding it would double-encode it.
+        $this->getConnectionPool()->getConnectionForTable('sys_file_metadata')->update(
+            'sys_file_metadata',
+            ['tx_ailabel_watermark' => ['position' => 'top-left', 'color' => 'white']],
+            ['uid' => 1]
+        );
+
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        self::assertGreaterThan(
+            $this->topLeftCornerBrightness($plain) + 5,
+            $this->topLeftCornerBrightness($flagged),
+            'Expected a white badge at the top-left corner, per the per-file override.'
+        );
+        self::assertEqualsWithDelta(
+            $this->bottomRightCornerBrightness($plain),
+            $this->bottomRightCornerBrightness($flagged),
+            2.0,
+            'The bottom-right corner should stay untouched once the override moved the badge to top-left.'
+        );
+    }
+
+    #[Test]
+    public function missingOverrideFallsBackToTheGlobalDefault(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkPosition'] = 'top-left';
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = 'white';
+        // Fixture leaves tx_ailabel_watermark NULL for uid 1 - nothing to inherit from.
+
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        self::assertGreaterThan(
+            $this->topLeftCornerBrightness($plain) + 5,
+            $this->topLeftCornerBrightness($flagged)
+        );
     }
 
     #[Test]

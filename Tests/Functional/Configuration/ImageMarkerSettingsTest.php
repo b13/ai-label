@@ -14,6 +14,8 @@ namespace B13\AiLabel\Tests\Functional\Configuration;
 
 use B13\AiLabel\Configuration\ImageMarkerSettings;
 use B13\AiLabel\Domain\Enum\ImageMarkerMode;
+use B13\AiLabel\Domain\Enum\WatermarkColor;
+use B13\AiLabel\Domain\Enum\WatermarkPosition;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -72,5 +74,69 @@ final class ImageMarkerSettingsTest extends FunctionalTestCase
     {
         unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
         self::assertSame(ImageMarkerMode::Off, $this->get(ImageMarkerSettings::class)->getMode());
+    }
+
+    public static function watermarkPositionDataProvider(): array
+    {
+        return [
+            'top-left' => ['top-left', WatermarkPosition::TopLeft],
+            'top-right' => ['top-right', WatermarkPosition::TopRight],
+            'bottom-left' => ['bottom-left', WatermarkPosition::BottomLeft],
+            'bottom-right' => ['bottom-right', WatermarkPosition::BottomRight],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('watermarkPositionDataProvider')]
+    public function configuredWatermarkPositionIsResolved(string $configured, WatermarkPosition $expected): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkPosition'] = $configured;
+        self::assertSame($expected, $this->get(ImageMarkerSettings::class)->getWatermarkPosition());
+    }
+
+    // Default must stay unchanged: the badge always sat bottom right before this setting existed.
+    #[Test]
+    public function anUnknownWatermarkPositionFallsBackToBottomRight(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkPosition'] = 'something-else';
+        self::assertSame(WatermarkPosition::BottomRight, $this->get(ImageMarkerSettings::class)->getWatermarkPosition());
+    }
+
+    #[Test]
+    public function aMissingWatermarkPositionConfigurationFallsBackToBottomRight(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
+        self::assertSame(WatermarkPosition::BottomRight, $this->get(ImageMarkerSettings::class)->getWatermarkPosition());
+    }
+
+    public static function watermarkColorDataProvider(): array
+    {
+        return [
+            'black' => ['black', WatermarkColor::Black],
+            'white' => ['white', WatermarkColor::White],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('watermarkColorDataProvider')]
+    public function configuredWatermarkColorIsResolved(string $configured, WatermarkColor $expected): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = $configured;
+        self::assertSame($expected, $this->get(ImageMarkerSettings::class)->getWatermarkColor());
+    }
+
+    // Default must stay unchanged: the badge was always black before this setting existed.
+    #[Test]
+    public function anUnknownWatermarkColorFallsBackToBlack(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = 'something-else';
+        self::assertSame(WatermarkColor::Black, $this->get(ImageMarkerSettings::class)->getWatermarkColor());
+    }
+
+    #[Test]
+    public function aMissingWatermarkColorConfigurationFallsBackToBlack(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
+        self::assertSame(WatermarkColor::Black, $this->get(ImageMarkerSettings::class)->getWatermarkColor());
     }
 }

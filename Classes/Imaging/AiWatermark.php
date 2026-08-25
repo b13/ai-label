@@ -12,8 +12,12 @@ namespace B13\AiLabel\Imaging;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Configuration\ImageMarkerSettings;
 use B13\AiLabel\Domain\Enum\AiOrigin;
+use B13\AiLabel\Domain\Enum\WatermarkColor;
+use B13\AiLabel\Domain\Enum\WatermarkPosition;
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Domain\Model\WatermarkOverride;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Imaging\ImageMagickFile;
@@ -62,6 +66,10 @@ final class AiWatermark implements LoggerAwareInterface
     // discloses nothing - such images fall back to the content element marker.
     private const MIN_IMAGE_WIDTH = 160;
 
+    public function __construct(private readonly ImageMarkerSettings $settings)
+    {
+    }
+
     public function appliesTo(FileInterface $sourceFile): bool
     {
         if (!$this->isProcessingAvailable()) {
@@ -81,7 +89,11 @@ final class AiWatermark implements LoggerAwareInterface
             return;
         }
 
-        $badgeFile = $this->getBadgeFile($origin);
+        $override = $this->getWatermarkOverride($sourceFile);
+        $color = $override->getColor() ?? $this->settings->getWatermarkColor();
+        $position = $override->getPosition() ?? $this->settings->getWatermarkPosition();
+
+        $badgeFile = $this->getBadgeFile($origin, $color);
         if ($badgeFile === null) {
             return;
         }
@@ -97,7 +109,7 @@ final class AiWatermark implements LoggerAwareInterface
         }
 
         $targetFile = GeneralUtility::tempnam('ai_label_watermark_', '.' . $processedFile->getExtension());
-        if (!$this->composite($sourceForProcessing, $badgeFile, $targetFile, $width)) {
+        if (!$this->composite($sourceForProcessing, $badgeFile, $targetFile, $width, $position)) {
             GeneralUtility::unlink_tempfile($targetFile);
             return;
         }
@@ -125,10 +137,16 @@ final class AiWatermark implements LoggerAwareInterface
         return min(self::TARGET_WIDTH, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
     }
 
-    private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth): bool
+    private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth, WatermarkPosition $position): bool
     {
         $badgeWidth = $this->getBadgeWidth($imageWidth);
         $margin = min(self::MAX_MARGIN, max(4, (int)round($imageWidth * self::MARGIN_RATIO)));
+        $gravity = match ($position) {
+            WatermarkPosition::TopLeft => 'NorthWest',
+            WatermarkPosition::TopRight => 'NorthEast',
+            WatermarkPosition::BottomLeft => 'SouthWest',
+            WatermarkPosition::BottomRight => 'SouthEast',
+        };
 
         // The parenthesised group scales the badge before it is composited, so the
         // badge keeps its own aspect ratio independently of the image below it.
@@ -138,7 +156,7 @@ final class AiWatermark implements LoggerAwareInterface
         $resize = CommandUtility::escapeShellArgument($badgeWidth . 'x>');
         $parameters = ImageMagickFile::fromFilePath($sourceFile)
             . ' \( ' . ImageMagickFile::fromFilePath($badgeFile) . ' -resize ' . $resize . ' \)'
-            . ' -gravity SouthEast -geometry +' . $margin . '+' . $margin . ' -composite'
+            . ' -gravity ' . $gravity . ' -geometry +' . $margin . '+' . $margin . ' -composite'
             . ' ' . CommandUtility::escapeShellArgument($targetFile);
 
         $command = CommandUtility::imageMagickCommand('convert', $parameters);
@@ -173,11 +191,23 @@ final class AiWatermark implements LoggerAwareInterface
         return AiMetadata::fromJsonString(is_string($value) ? $value : null)->getOrigin();
     }
 
-    private function getBadgeFile(AiOrigin $origin): ?string
+    // Per-file override of the global watermarkPosition/watermarkColor defaults -
+    // same hasProperty()/getProperty() pattern as getOrigin().
+    private function getWatermarkOverride(FileInterface $file): WatermarkOverride
+    {
+        if (!$file->hasProperty('tx_ailabel_watermark')) {
+            return WatermarkOverride::fromJsonString(null);
+        }
+        $value = $file->getProperty('tx_ailabel_watermark');
+
+        return WatermarkOverride::fromJsonString(is_string($value) ? $value : null);
+    }
+
+    private function getBadgeFile(AiOrigin $origin, WatermarkColor $color): ?string
     {
         $name = match ($origin) {
-            AiOrigin::Generated => 'ai_generated_black.png',
-            AiOrigin::Manipulated => 'ai_modified_black.png',
+            AiOrigin::Generated => 'ai_generated_' . $color->value . '.png',
+            AiOrigin::Manipulated => 'ai_modified_' . $color->value . '.png',
             AiOrigin::Human => null,
         };
         if ($name === null) {

@@ -50,6 +50,8 @@ jobs:
         run: .Build/bin/phpstan analyze -c Build/phpstan13.neon
       - name: Phpcsfix
         run: .Build/bin/php-cs-fixer fix --config=Build/php-cs-fixer.php --dry-run --stop-on-violation --using-cache=no
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
       - name: Functional Tests
         run: |
           export typo3DatabaseName="typo3";

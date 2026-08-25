@@ -13,17 +13,14 @@ namespace B13\AiLabel\Configuration;
  */
 
 use B13\AiLabel\Domain\Enum\ImageMarkerMode;
+use B13\AiLabel\Domain\Enum\WatermarkColor;
+use B13\AiLabel\Domain\Enum\WatermarkPosition;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
-// Deliberately ExtensionConfiguration and not a Site Set setting: the "baked" mode
-// hooks into FAL image processing (see B13\AiLabel\Imaging\AiWatermarkProcessor),
-// which also runs outside any site context - backend thumbnails, CLI, the scheduler.
-// A per-site setting would be unresolvable exactly there, so one global switch is the
-// honest model. The "overlay" mode alone could have been a Set setting, but splitting
-// one user-facing choice across two configuration mechanisms is worse than the
-// slightly coarser scope.
+// ExtensionConfiguration, not a Site Set: "baked" mode hooks into FAL processing,
+// which also runs outside any site context (backend thumbnails, CLI, scheduler).
 final class ImageMarkerSettings
 {
     public function __construct(private readonly ExtensionConfiguration $extensionConfiguration)
@@ -40,5 +37,29 @@ final class ImageMarkerSettings
         }
 
         return ImageMarkerMode::tryFrom(is_string($value) ? $value : '') ?? ImageMarkerMode::Off;
+    }
+
+    // Global default for "baked" mode. Bottom right matches the old, hardcoded position.
+    public function getWatermarkPosition(): WatermarkPosition
+    {
+        try {
+            $value = $this->extensionConfiguration->get('ai_label', 'watermarkPosition');
+        } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+            return WatermarkPosition::BottomRight;
+        }
+
+        return WatermarkPosition::tryFrom(is_string($value) ? $value : '') ?? WatermarkPosition::BottomRight;
+    }
+
+    // Global default for "baked" mode. Black matches the old, hardcoded color.
+    public function getWatermarkColor(): WatermarkColor
+    {
+        try {
+            $value = $this->extensionConfiguration->get('ai_label', 'watermarkColor');
+        } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+            return WatermarkColor::Black;
+        }
+
+        return WatermarkColor::tryFrom(is_string($value) ? $value : '') ?? WatermarkColor::Black;
     }
 }

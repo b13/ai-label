@@ -40,10 +40,10 @@
     <div class="b_ai-label">
         <f:switch expression="{aiMetadata.origin.value}">
             <f:case value="1">
-                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
+                <f:image width="83" height="16" src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
             </f:case>
             <f:case value="2">
-                <f:image src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
+                <f:image width="83" height="18" src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
             </f:case>
         </f:switch>
     </div>

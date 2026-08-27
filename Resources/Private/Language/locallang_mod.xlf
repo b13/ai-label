@@ -58,7 +58,7 @@
                 <source>Existing, human-authored records that AI subsequently edited.</source>
             </trans-unit>
             <trans-unit id="overview.stats.reviewRequired">
-                <source>Review required</source>
+                <source>Not reviewed</source>
             </trans-unit>
             <trans-unit id="overview.stats.reviewRequired.info">
                 <source>Flagged records nobody has reviewed yet.</source>
@@ -73,7 +73,7 @@
                 <source>Review status</source>
             </trans-unit>
             <trans-unit id="overview.filter.reviewStatus.required">
-                <source>Review required</source>
+                <source>Not reviewed</source>
             </trans-unit>
             <trans-unit id="overview.filter.reviewStatus.reviewed">
                 <source>Reviewed</source>

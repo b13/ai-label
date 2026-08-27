@@ -35,7 +35,7 @@
         <f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: record)}"/>
     </f:else>
 </f:if>
-<f:if condition="{aiMetadata.flagged}">
+<f:if condition="{aiMetadata.flagged} && !{aiMetadata.reviewed}">
     <f:asset.css identifier="ai-label" href="EXT:ai_label/Resources/Public/Css/fe-ai-label.css"/>
     <div class="b_ai-label">
         <f:switch expression="{aiMetadata.origin.value}">

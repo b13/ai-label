@@ -14,7 +14,9 @@ namespace B13\AiLabel\Domain\Repository;
 
 use B13\AiLabel\Configuration\ApplicableTablesProvider;
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Event\AfterRecordIsBuiltEvent;
 use B13\AiLabel\Service\AiMetadataBadgeFactory;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\History\RecordHistory;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Context\Context;
@@ -50,6 +52,7 @@ final class AiMetadataRecordFinder
         private readonly Context $context,
         private readonly TcaSchemaFactory $tcaSchemaFactory,
         private readonly IconFactory $iconFactory,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -293,7 +296,7 @@ final class AiMetadataRecordFinder
             return null;
         }
 
-        return [
+        $record = [
             'table' => $table,
             'uid' => (int)$row['uid'],
             'pid' => (int)$row['pid'],
@@ -315,6 +318,11 @@ final class AiMetadataRecordFinder
             // "reviewed by X on Y" wording/color can't drift apart between the two.
             'reviewBadge' => $this->badgeFactory->getBadge($metadata),
         ];
+
+        $event = new AfterRecordIsBuiltEvent($record, $row);
+        $this->eventDispatcher->dispatch($event);
+
+        return $event->getRecord();
     }
 
     /** @param array<string, mixed> $row */

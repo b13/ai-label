@@ -189,6 +189,29 @@ final class RegisterMyTableForAiLabel
 (`removeApplicableTable()` is available too, if you need to opt a default
 table back out.)
 
+### Extending the overview module's record list
+
+`AiMetadataRecordFinder` (used by the overview module and by the flagged-content
+badges in the Page/Layout module) dispatches
+`B13\AiLabel\Event\AfterRecordIsBuiltEvent` once per flagged record it builds -
+listen to it to add or change keys on that record:
+
+```php
+#[AsEventListener]
+final class AddCustomColumnToAiLabelOverview
+{
+    public function __invoke(AfterRecordIsBuiltEvent $event): void
+    {
+        $table = $event->getRecord()['table'];
+        $event->setRecordProperty('myCustomColumn', $this->resolveSomething($table, $event->getRow()));
+    }
+}
+```
+
+`getRow()` gives you the raw DB row the record was built from, in case you need
+more than what's already in `getRecord()` (which table it's from is in
+`getRecord()['table']`).
+
 ## Frontend integration
 
 This extension renders a small AI-origin marker on every content element

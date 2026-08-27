@@ -40,8 +40,8 @@
                 <target>Setzen Sie diesen Haken erst, wenn eine Person den Inhalt wirklich gelesen und auf Richtigkeit geprüft hat – ein kurzer Blick oder eine Rechtschreibprüfung genügt nicht. Mit dem Haken übernehmen Sie die Verantwortung für das, was veröffentlicht wird. Bei Texten akzeptiert das Gesetz eine solche Prüfung anstelle einer öffentlichen Kennzeichnung, bei Bildern, Audio und Video hingegen nicht – diese bleiben in jedem Fall gekennzeichnet. Diese Extension zeigt die Markierung ohnehin bei jedem gekennzeichneten Datensatz an, was immer der sichere Weg ist. Wird ein gekennzeichneter Datensatz später bearbeitet, wird die Prüfung zurückgesetzt, damit der Inhalt erneut geprüft wird.</target>
             </trans-unit>
             <trans-unit id="notice.reviewRequired">
-                <source>Review required</source>
-                <target>Prüfung erforderlich</target>
+                <source>Not reviewed</source>
+                <target>Nicht geprüft</target>
             </trans-unit>
             <trans-unit id="notice.reviewedBy">
                 <source>Reviewed by %s on %s</source>

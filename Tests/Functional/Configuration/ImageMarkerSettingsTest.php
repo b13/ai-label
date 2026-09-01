@@ -16,6 +16,7 @@ use B13\AiLabel\Configuration\ImageMarkerSettings;
 use B13\AiLabel\Domain\Enum\ImageMarkerMode;
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -138,5 +139,46 @@ final class ImageMarkerSettingsTest extends FunctionalTestCase
     {
         unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
         self::assertSame(WatermarkColor::Black, $this->get(ImageMarkerSettings::class)->getWatermarkColor());
+    }
+
+    public static function watermarkWidthDataProvider(): array
+    {
+        return [
+            'regular' => ['160', WatermarkWidth::Regular],
+            'small' => ['80', WatermarkWidth::Small],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('watermarkWidthDataProvider')]
+    public function configuredWatermarkWidthIsResolved(string $configured, WatermarkWidth $expected): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkWidth'] = $configured;
+        self::assertSame($expected, $this->get(ImageMarkerSettings::class)->getWatermarkWidth());
+    }
+
+    // Default must stay unchanged: the badge was always a constant 160px before this
+    // became configurable - a closed set of two options, so anything outside {160, 80}
+    // (non-numeric, or a number that just isn't one of the two allowed sizes) falls
+    // back the same way an unrecognised position/color would.
+    #[Test]
+    public function aNonNumericWatermarkWidthFallsBackToRegular(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkWidth'] = 'something-else';
+        self::assertSame(WatermarkWidth::Regular, $this->get(ImageMarkerSettings::class)->getWatermarkWidth());
+    }
+
+    #[Test]
+    public function aNumericButUnsupportedWatermarkWidthFallsBackToRegular(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkWidth'] = '400';
+        self::assertSame(WatermarkWidth::Regular, $this->get(ImageMarkerSettings::class)->getWatermarkWidth());
+    }
+
+    #[Test]
+    public function aMissingWatermarkWidthConfigurationFallsBackToRegular(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
+        self::assertSame(WatermarkWidth::Regular, $this->get(ImageMarkerSettings::class)->getWatermarkWidth());
     }
 }

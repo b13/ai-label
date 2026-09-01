@@ -40,6 +40,7 @@ final class EnrichWatermarkOverrideTest extends FunctionalTestCase
     {
         return [
             'tx_ailabel_watermark_position' => ['config' => ['type' => 'user', 'renderType' => 'aiLabelVirtualSelect']],
+            'tx_ailabel_watermark_width' => ['config' => ['type' => 'user', 'renderType' => 'aiLabelVirtualSelect']],
             'tx_ailabel_watermark' => ['config' => ['type' => 'json', 'nullable' => true, 'default' => null]],
         ];
     }
@@ -59,6 +60,7 @@ final class EnrichWatermarkOverrideTest extends FunctionalTestCase
         $result = (new EnrichWatermarkOverride())->addData($result);
         self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_position']);
         self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_color']);
+        self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_width']);
     }
 
     #[Test]
@@ -77,6 +79,7 @@ final class EnrichWatermarkOverrideTest extends FunctionalTestCase
         $result = (new EnrichWatermarkOverride())->addData($result);
         self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_position']);
         self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_color']);
+        self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_width']);
     }
 
     #[Test]
@@ -86,7 +89,7 @@ final class EnrichWatermarkOverrideTest extends FunctionalTestCase
             'command' => 'edit',
             'databaseRow' => [
                 'uid' => 1,
-                'tx_ailabel_watermark' => ['position' => 'top-left', 'color' => 'white'],
+                'tx_ailabel_watermark' => ['position' => 'top-left', 'color' => 'white', 'width' => 80],
             ],
             'processedTca' => ['columns' => $this->getProcessedTcaColumns()],
         ];
@@ -94,5 +97,24 @@ final class EnrichWatermarkOverrideTest extends FunctionalTestCase
         $result = (new EnrichWatermarkOverride())->addData($result);
         self::assertSame('top-left', $result['databaseRow']['tx_ailabel_watermark_position']);
         self::assertSame('white', $result['databaseRow']['tx_ailabel_watermark_color']);
+        self::assertSame(80, $result['databaseRow']['tx_ailabel_watermark_width']);
+    }
+
+    // A stored width outside the closed {160, 80} set (e.g. from before this became a
+    // fixed choice) decodes the same as a missing one - "inherit the global default".
+    #[Test]
+    public function anUnsupportedStoredWidthDecodesAsInherit(): void
+    {
+        $result = [
+            'command' => 'edit',
+            'databaseRow' => [
+                'uid' => 1,
+                'tx_ailabel_watermark' => ['position' => null, 'color' => null, 'width' => 200],
+            ],
+            'processedTca' => ['columns' => $this->getProcessedTcaColumns()],
+        ];
+
+        $result = (new EnrichWatermarkOverride())->addData($result);
+        self::assertSame('', $result['databaseRow']['tx_ailabel_watermark_width']);
     }
 }

@@ -14,16 +14,18 @@ namespace B13\AiLabel\Domain\Model;
 
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 
 // Immutable value object for the tx_ailabel_watermark JSON column on
 // sys_file_metadata - a per-file override of the global watermarkPosition/
-// watermarkColor ext_conf defaults. Not folded into AiMetadata: that object's
-// shape (origin + review workflow) is unrelated. Null properties mean "inherit
-// the global default", resolved by AiWatermark.
+// watermarkColor/watermarkWidth ext_conf defaults. Not folded into AiMetadata: that
+// object's shape (origin + review workflow) is unrelated. Null properties mean
+// "inherit the global default", resolved by AiWatermark.
 final class WatermarkOverride
 {
     private ?WatermarkPosition $position = null;
     private ?WatermarkColor $color = null;
+    private ?WatermarkWidth $width = null;
 
     public static function fromJsonString(?string $json): self
     {
@@ -43,6 +45,8 @@ final class WatermarkOverride
 
         $override->position = WatermarkPosition::tryFrom((string)($data['position'] ?? ''));
         $override->color = WatermarkColor::tryFrom((string)($data['color'] ?? ''));
+        $width = $data['width'] ?? null;
+        $override->width = is_numeric($width) ? WatermarkWidth::tryFrom((int)$width) : null;
         return $override;
     }
 
@@ -54,6 +58,11 @@ final class WatermarkOverride
     public function getColor(): ?WatermarkColor
     {
         return $this->color;
+    }
+
+    public function getWidth(): ?WatermarkWidth
+    {
+        return $this->width;
     }
 
     public function withPosition(?WatermarkPosition $position): self
@@ -70,6 +79,13 @@ final class WatermarkOverride
         return $clone;
     }
 
+    public function withWidth(?WatermarkWidth $width): self
+    {
+        $clone = clone $this;
+        $clone->width = $width;
+        return $clone;
+    }
+
     /**
      * The value to assign to DataHandler's $fieldArray['tx_ailabel_watermark'] - a
      * plain array, DataHandler/Doctrine encode it themselves for the json column.
@@ -79,6 +95,7 @@ final class WatermarkOverride
         return [
             'position' => $this->position?->value,
             'color' => $this->color?->value,
+            'width' => $this->width?->value,
         ];
     }
 }

@@ -16,6 +16,7 @@ use B13\AiLabel\Configuration\ImageMarkerSettings;
 use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Domain\Model\AiMetadata;
 use B13\AiLabel\Domain\Model\WatermarkOverride;
 use Psr\Log\LoggerAwareInterface;
@@ -45,18 +46,7 @@ final class AiWatermark implements LoggerAwareInterface
     // pixels to write into.
     private const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'];
 
-    // The badge is drawn at a constant width and is never enlarged beyond it. Scaling it
-    // with the image (the previous behaviour) meant the same picture carried a 60px marker
-    // as a thumbnail and a 320px one as a hero - the marker visibly zoomed in with the
-    // image instead of staying a discreet, consistent mark.
-    //
-    // 160px is picked to line up with the "overlay" mode: that renders at 83 CSS px, and a
-    // processed variant is typically displayed at about half its pixel width, so both modes
-    // end up looking roughly the same size on the page.
-    private const TARGET_WIDTH = 160;
-
-    // ...with the one exception of images too small to carry a 160px badge, where a constant
-    // width would swallow the picture. Only there does it shrink along with the image.
+    // For small Images
     private const MAX_RELATIVE_WIDTH = 0.25;
 
     private const MARGIN_RATIO = 0.03;
@@ -92,6 +82,7 @@ final class AiWatermark implements LoggerAwareInterface
         $override = $this->getWatermarkOverride($sourceFile);
         $color = $override->getColor() ?? $this->settings->getWatermarkColor();
         $position = $override->getPosition() ?? $this->settings->getWatermarkPosition();
+        $targetWidth = $override->getWidth() ?? $this->settings->getWatermarkWidth();
 
         $badgeFile = $this->getBadgeFile($origin, $color);
         if ($badgeFile === null) {
@@ -109,7 +100,7 @@ final class AiWatermark implements LoggerAwareInterface
         }
 
         $targetFile = GeneralUtility::tempnam('ai_label_watermark_', '.' . $processedFile->getExtension());
-        if (!$this->composite($sourceForProcessing, $badgeFile, $targetFile, $width, $position)) {
+        if (!$this->composite($sourceForProcessing, $badgeFile, $targetFile, $width, $position, $targetWidth)) {
             GeneralUtility::unlink_tempfile($targetFile);
             return;
         }
@@ -125,21 +116,23 @@ final class AiWatermark implements LoggerAwareInterface
     }
 
     /**
-     * The sizing rule: a constant TARGET_WIDTH, never exceeded, so the badge cannot grow
+     * The sizing rule: a constant target width, never exceeded, so the badge cannot grow
      * with the image - only pictures too small to carry it shrink the badge, and then to
-     * at most MAX_RELATIVE_WIDTH of their own width.
+     * at most MAX_RELATIVE_WIDTH of their own width. $targetWidth defaults to the
+     * globally configured width (ImageMarkerSettings::getWatermarkWidth()) so callers that
+     * have no per-file override to resolve - namely the tests - can omit it entirely.
      *
      * Public because it is the one piece of behaviour here that can be asserted without
      * an image processor installed, and it has regressed once already.
      */
-    public function getBadgeWidth(int $imageWidth): int
+    public function getBadgeWidth(int $imageWidth, ?WatermarkWidth $targetWidth = null): int
     {
-        return min(self::TARGET_WIDTH, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
+        return min(($targetWidth ?? $this->settings->getWatermarkWidth())->value, (int)round($imageWidth * self::MAX_RELATIVE_WIDTH));
     }
 
-    private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth, WatermarkPosition $position): bool
+    private function composite(string $sourceFile, string $badgeFile, string $targetFile, int $imageWidth, WatermarkPosition $position, WatermarkWidth $targetWidth): bool
     {
-        $badgeWidth = $this->getBadgeWidth($imageWidth);
+        $badgeWidth = $this->getBadgeWidth($imageWidth, $targetWidth);
         $margin = min(self::MAX_MARGIN, max(4, (int)round($imageWidth * self::MARGIN_RATIO)));
         $gravity = match ($position) {
             WatermarkPosition::TopLeft => 'NorthWest',

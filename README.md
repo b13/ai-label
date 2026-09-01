@@ -317,17 +317,21 @@ cached like any other processed image. Things to know:
   operator, so sites on GraphicsMagick silently keep the content element marker.
 - **SVGs are skipped** (they are never rasterised) as are images narrower than
   160px, where the badge would be unreadable anyway.
-- The badge is a constant 160px wide and is never enlarged beyond that, so it
-  stays a discreet mark rather than growing with the image. Only on images too
-  small to carry it does it shrink, to at most a quarter of the image width.
-- **Position and color are configurable.** Two extension configuration settings,
-  `watermarkPosition` (`top-left`/`top-right`/`bottom-left`/`bottom-right`,
-  default `bottom-right`) and `watermarkColor` (`black`/`white`, default
-  `black`), set the site-wide default - both match the previous, fixed
-  behaviour unless changed. A flagged file's own `sys_file_metadata` edit form
-  gets a "Watermark position"/"Watermark color" override (visible only in
-  `baked` mode) to set a different corner/color for that one file; leaving
-  either at "Inherit global setting" uses the site-wide default.
+- The badge is a constant width and is never enlarged beyond that, so it stays
+  a discreet mark rather than growing with the image. Only on images too small
+  to carry it does it shrink, to at most a quarter of the image width.
+- **Position, color and width are configurable.** Three extension configuration
+  settings, `watermarkPosition` (`top-left`/`top-right`/`bottom-left`/
+  `bottom-right`, default `bottom-right`), `watermarkColor` (`black`/`white`,
+  default `black`) and `watermarkWidth` (`160`/`80`, default `160`), set the
+  site-wide defaults - all three match the previous, fixed behaviour unless
+  changed. Width is deliberately a fixed choice of two sizes, not a free-form
+  number, so an editor can't shrink the badge into illegibility or blow it up
+  past its own artwork's resolution. A flagged file's own `sys_file_metadata`
+  edit form gets a "Watermark position"/"Watermark color"/"Watermark width"
+  override (visible only in `baked` mode) to set a different corner/color/width
+  for that one file; leaving any of them at "Inherit global setting" uses the
+  site-wide default.
 - Only *processed* images are marked. If a template links an original file
   directly, without any processing instruction, it is served unmarked.
 - Changing a file's AI flag, or its per-file watermark override, flushes that

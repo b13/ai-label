@@ -14,15 +14,17 @@ namespace B13\AiLabel\Hooks;
 
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Domain\Model\WatermarkOverride;
 use B13\AiLabel\Imaging\ProcessedFileInvalidator;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 
-// Folds tx_ailabel_watermark_position / tx_ailabel_watermark_color into the
-// tx_ailabel_watermark JSON column on sys_file_metadata - same virtual-field-to-JSON
-// pattern as AiMetaDataHandlerHook, but simpler: no review-workflow business rule,
-// so whatever was submitted just wins, no AiLabelApi/nested-DataHandler needed.
+// Folds tx_ailabel_watermark_position / tx_ailabel_watermark_color /
+// tx_ailabel_watermark_width into the tx_ailabel_watermark JSON column on
+// sys_file_metadata - same virtual-field-to-JSON pattern as AiMetaDataHandlerHook,
+// but simpler: no review-workflow business rule, so whatever was submitted just
+// wins, no AiLabelApi/nested-DataHandler needed.
 #[Autoconfigure(public: true)]
 final class AiWatermarkOverrideHandlerHook
 {
@@ -44,14 +46,21 @@ final class AiWatermarkOverrideHandlerHook
         if (
             !array_key_exists('tx_ailabel_watermark_position', $incomingFieldArray)
             && !array_key_exists('tx_ailabel_watermark_color', $incomingFieldArray)
+            && !array_key_exists('tx_ailabel_watermark_width', $incomingFieldArray)
         ) {
             return;
         }
 
         $position = WatermarkPosition::tryFrom((string)($incomingFieldArray['tx_ailabel_watermark_position'] ?? ''));
         $color = WatermarkColor::tryFrom((string)($incomingFieldArray['tx_ailabel_watermark_color'] ?? ''));
-        $this->pendingValues[$table . ':' . $id] = (new WatermarkOverride())->withPosition($position)->withColor($color);
-        unset($incomingFieldArray['tx_ailabel_watermark_position'], $incomingFieldArray['tx_ailabel_watermark_color']);
+        $rawWidth = $incomingFieldArray['tx_ailabel_watermark_width'] ?? '';
+        $width = is_numeric($rawWidth) ? WatermarkWidth::tryFrom((int)$rawWidth) : null;
+        $this->pendingValues[$table . ':' . $id] = (new WatermarkOverride())->withPosition($position)->withColor($color)->withWidth($width);
+        unset(
+            $incomingFieldArray['tx_ailabel_watermark_position'],
+            $incomingFieldArray['tx_ailabel_watermark_color'],
+            $incomingFieldArray['tx_ailabel_watermark_width']
+        );
     }
 
     public function processDatamap_postProcessFieldArray(

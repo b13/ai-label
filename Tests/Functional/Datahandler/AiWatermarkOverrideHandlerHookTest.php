@@ -12,6 +12,7 @@ namespace B13\AiLabel\Tests\Functional\Datahandler;
  * of the License, or any later version.
  */
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Core\Environment;
@@ -74,6 +75,7 @@ final class AiWatermarkOverrideHandlerHookTest extends FunctionalTestCase
                     'file' => 2,
                     'tx_ailabel_watermark_position' => 'top-left',
                     'tx_ailabel_watermark_color' => 'white',
+                    'tx_ailabel_watermark_width' => '80',
                 ],
             ],
         ];
@@ -83,7 +85,7 @@ final class AiWatermarkOverrideHandlerHookTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function newRecordWithoutWatermarkOverrideStoresInheritForBothFields(): void
+    public function newRecordWithoutWatermarkOverrideStoresInheritForAllFields(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/AiWatermarkOverrideHandlerHook/FileWithoutMetadata.csv');
         $data = [
@@ -93,6 +95,41 @@ final class AiWatermarkOverrideHandlerHookTest extends FunctionalTestCase
                     'file' => 2,
                     'tx_ailabel_watermark_position' => '',
                     'tx_ailabel_watermark_color' => '',
+                    'tx_ailabel_watermark_width' => '',
+                ],
+            ],
+        ];
+        $this->dataHandler->start($data, [], $this->backendUser);
+        $this->dataHandler->process_datamap();
+        self::assertCSVDataSet(__DIR__ . '/Fixtures/AiWatermarkOverrideHandlerHook/NewRecordWithoutWatermarkOverrideResult.csv');
+    }
+
+    public static function invalidWatermarkWidthDataProvider(): array
+    {
+        return [
+            'non-numeric' => ['not-a-number'],
+            'zero' => ['0'],
+            'negative' => ['-10'],
+            'numeric but not one of the two allowed sizes' => ['200'],
+        ];
+    }
+
+    // Same "inherit the global default" outcome as an empty submission - width is a
+    // closed set of two values, so anything else collapses to null the same way an
+    // unrecognised position/color would.
+    #[Test]
+    #[DataProvider('invalidWatermarkWidthDataProvider')]
+    public function newRecordWithInvalidWatermarkWidthStoresInherit(string $invalidWidth): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/AiWatermarkOverrideHandlerHook/FileWithoutMetadata.csv');
+        $data = [
+            'sys_file_metadata' => [
+                'NEW1' => [
+                    'pid' => 0,
+                    'file' => 2,
+                    'tx_ailabel_watermark_position' => '',
+                    'tx_ailabel_watermark_color' => '',
+                    'tx_ailabel_watermark_width' => $invalidWidth,
                 ],
             ],
         ];
@@ -110,6 +147,7 @@ final class AiWatermarkOverrideHandlerHookTest extends FunctionalTestCase
                 1 => [
                     'tx_ailabel_watermark_position' => 'bottom-left',
                     'tx_ailabel_watermark_color' => 'black',
+                    'tx_ailabel_watermark_width' => '80',
                 ],
             ],
         ];

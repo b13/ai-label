@@ -15,6 +15,7 @@ namespace B13\AiLabel\Configuration;
 use B13\AiLabel\Domain\Enum\ImageMarkerMode;
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -61,5 +62,17 @@ final class ImageMarkerSettings
         }
 
         return WatermarkColor::tryFrom(is_string($value) ? $value : '') ?? WatermarkColor::Black;
+    }
+
+    // Global default for "baked" mode. Regular (160px) matches the old, hardcoded width.
+    public function getWatermarkWidth(): WatermarkWidth
+    {
+        try {
+            $value = $this->extensionConfiguration->get('ai_label', 'watermarkWidth');
+        } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+            return WatermarkWidth::Regular;
+        }
+
+        return (is_numeric($value) ? WatermarkWidth::tryFrom((int)$value) : null) ?? WatermarkWidth::Regular;
     }
 }

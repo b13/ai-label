@@ -18,6 +18,7 @@ use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Enum\ImageMarkerMode;
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Configuration\Event\AfterTcaCompilationEvent;
 
@@ -78,8 +79,22 @@ final class AddWatermarkFieldsToTca
             ],
             'displayCond' => 'FIELD:tx_ailabel_origin:!=:' . AiOrigin::Human->value,
         ];
+        $tca['sys_file_metadata']['columns']['tx_ailabel_watermark_width'] = [
+            'label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.watermark_width',
+            'description' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.watermark_width.description',
+            'config' => [
+                'type' => 'user',
+                'renderType' => 'aiLabelVirtualSelect',
+                'items' => [
+                    ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.watermark_width.inherit', 'value' => ''],
+                    ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.watermark_width.regular', 'value' => WatermarkWidth::Regular->value],
+                    ['label' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:field.watermark_width.small', 'value' => WatermarkWidth::Small->value],
+                ],
+            ],
+            'displayCond' => 'FIELD:tx_ailabel_origin:!=:' . AiOrigin::Human->value,
+        ];
         $tca['sys_file_metadata']['palettes']['aiLabelWatermark'] = [
-            'showitem' => 'tx_ailabel_watermark_position, tx_ailabel_watermark_color',
+            'showitem' => 'tx_ailabel_watermark_position, tx_ailabel_watermark_color, tx_ailabel_watermark_width',
             'description' => 'LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:palette.aiLabelWatermark.description',
         ];
         $tca['sys_file_metadata']['columns']['tx_ailabel_watermark'] = [

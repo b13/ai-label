@@ -60,9 +60,10 @@ final class AddWatermarkFieldsToTcaTest extends FunctionalTestCase
 
         self::assertArrayHasKey('tx_ailabel_watermark_position', $tca['sys_file_metadata']['columns']);
         self::assertArrayHasKey('tx_ailabel_watermark_color', $tca['sys_file_metadata']['columns']);
+        self::assertArrayHasKey('tx_ailabel_watermark_width', $tca['sys_file_metadata']['columns']);
         self::assertSame('json', $tca['sys_file_metadata']['columns']['tx_ailabel_watermark']['config']['type']);
         self::assertSame(
-            'tx_ailabel_watermark_position, tx_ailabel_watermark_color',
+            'tx_ailabel_watermark_position, tx_ailabel_watermark_color, tx_ailabel_watermark_width',
             $tca['sys_file_metadata']['palettes']['aiLabelWatermark']['showitem']
         );
         self::assertStringContainsString('--palette--;;aiLabelWatermark', $tca['sys_file_metadata']['types']['0']['showitem']);
@@ -79,6 +80,7 @@ final class AddWatermarkFieldsToTcaTest extends FunctionalTestCase
 
         self::assertArrayNotHasKey('tx_ailabel_watermark_position', $tca['sys_file_metadata']['columns']);
         self::assertArrayNotHasKey('tx_ailabel_watermark_color', $tca['sys_file_metadata']['columns']);
+        self::assertArrayNotHasKey('tx_ailabel_watermark_width', $tca['sys_file_metadata']['columns']);
         self::assertArrayNotHasKey('tx_ailabel_watermark', $tca['sys_file_metadata']['columns']);
         self::assertArrayNotHasKey('aiLabelWatermark', $tca['sys_file_metadata']['palettes'] ?? []);
     }

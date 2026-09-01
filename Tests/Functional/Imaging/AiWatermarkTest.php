@@ -12,6 +12,7 @@ namespace B13\AiLabel\Tests\Functional\Imaging;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Imaging\AiWatermark;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -181,11 +182,58 @@ final class AiWatermarkTest extends FunctionalTestCase
         return $this->averageBrightness($filePath, 445, 408, 125, 17);
     }
 
+    // Left of where the small (80px) badge's left edge sits (582 - 80 = 502, minus the
+    // 18px margin already baked into that 582), but still inside the regular/capped
+    // (150px) badge's own left portion - so this strip is only ever covered by the wider
+    // badge. Same vertical band as bottomRightCornerBrightness(), since width alone
+    // shouldn't move the badge's vertical position.
+    private function outsideShrunkBadgeBrightness(string $filePath): float
+    {
+        return $this->averageBrightness($filePath, 445, 408, 50, 17);
+    }
+
     private function processedFilePath(int $fileUid): string
     {
         $file = $this->get(ResourceFactory::class)->getFileObject($fileUid);
         $processedFile = $file->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600]);
         return $processedFile->getForLocalProcessing(false);
+    }
+
+    #[Test]
+    public function badgeWidthUsesTheConfiguredGlobalWidth(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkWidth'] = '80';
+        self::assertSame(80, $this->get(AiWatermark::class)->getBadgeWidth(5120));
+    }
+
+    #[Test]
+    public function badgeWidthPerFileOverrideBeatsTheGlobalDefault(): void
+    {
+        self::assertSame(80, $this->get(AiWatermark::class)->getBadgeWidth(5120, WatermarkWidth::Small));
+    }
+
+    #[Test]
+    public function badgeShrinksToTheConfiguredGlobalWidth(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkWidth'] = '80';
+
+        $flagged = $this->processedFilePath(1);
+        $plain = $this->processedFilePath(2);
+
+        // Still inside the shrunk badge's own footprint, near the bottom-right corner -
+        // confirms a badge was actually rendered, just a narrower one.
+        self::assertLessThan(
+            $this->bottomRightCornerBrightness($plain) - 5,
+            $this->bottomRightCornerBrightness($flagged)
+        );
+        // A strip the regular-width badge would have covered, but the shrunk one
+        // doesn't reach - stays untouched once the badge is actually narrower.
+        self::assertEqualsWithDelta(
+            $this->outsideShrunkBadgeBrightness($plain),
+            $this->outsideShrunkBadgeBrightness($flagged),
+            2.0,
+            'The area outside the shrunk badge should stay untouched.'
+        );
     }
 
     #[Test]

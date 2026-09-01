@@ -6,3 +6,6 @@ watermarkPosition = bottom-right
 
 # cat=basic//30; type=options[Black=black,White=white]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.watermarkColor
 watermarkColor = black
+
+# cat=basic//40; type=options[160px (default)=160,80px (small)=80]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.watermarkWidth
+watermarkWidth = 160

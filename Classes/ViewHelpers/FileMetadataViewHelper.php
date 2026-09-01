@@ -13,6 +13,8 @@ namespace B13\AiLabel\ViewHelpers;
  */
 
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Service\CacheHelper;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\Resource\FileReference;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
@@ -33,8 +35,13 @@ use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
  *    <ailabel:fileMetadata fileReference="{image}" as="aiMetadata" />
  * ```
  */
+#[Autoconfigure(public: true)]
 final class FileMetadataViewHelper extends AbstractViewHelper
 {
+    public function __construct(private readonly CacheHelper $cacheHelper)
+    {
+    }
+
     public function initializeArguments(): void
     {
         $this->registerArgument('fileReference', FileReference::class, 'A FAL file reference to check', true);
@@ -45,6 +52,8 @@ final class FileMetadataViewHelper extends AbstractViewHelper
     {
         /** @var FileReference $fileReference */
         $fileReference = $this->arguments['fileReference'];
+        $this->cacheHelper->addCacheTag($fileReference);
+
         // sys_file_metadata rows don't strictly have to carry tx_ailabel_metadata
         // (e.g. files never touched by this extension) - getProperty() throws for
         // unknown keys. getProperty() itself is untyped (mixed) - it's a raw JSON

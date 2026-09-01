@@ -12,6 +12,7 @@ namespace B13\AiLabel\Imaging;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Service\CacheHelper;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
@@ -33,6 +34,7 @@ final class ProcessedFileInvalidator
         private readonly ProcessedFileRepository $processedFileRepository,
         private readonly ResourceFactory $resourceFactory,
         private readonly ConnectionPool $connectionPool,
+        private readonly CacheHelper $cacheHelper,
     ) {
     }
 
@@ -42,6 +44,7 @@ final class ProcessedFileInvalidator
      */
     public function invalidateForFileMetadata(int $metadataUid): void
     {
+        $this->cacheHelper->invalidate($metadataUid);
         $fileUid = $this->connectionPool
             ->getConnectionForTable('sys_file_metadata')
             ->fetchOne('SELECT file FROM sys_file_metadata WHERE uid = ?', [$metadataUid]);

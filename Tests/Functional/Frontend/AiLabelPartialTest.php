@@ -89,4 +89,17 @@ final class AiLabelPartialTest extends FunctionalTestCase
 
         self::assertSame('', $output);
     }
+
+    /**
+     * Text is the one case the EU AI Act lets a genuine human review substitute
+     * for the public label (Article 50, text exception) - a reviewed content
+     * element/page must stop rendering the marker.
+     */
+    #[Test]
+    public function reviewedRecordRendersNothing(): void
+    {
+        $output = $this->renderPartial(['tx_ailabel_metadata' => '{"origin":1,"reviewed_by":1,"reviewed_timestamp":1000}']);
+
+        self::assertSame('', $output);
+    }
 }

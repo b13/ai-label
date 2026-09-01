@@ -49,9 +49,11 @@ final class ImageOverlayPartialTest extends FunctionalTestCase
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/Fixtures/OverlayImages.csv');
-        // Same picture behind both rows - what differs is the AI flag on their metadata.
+        // Same picture behind all three rows - what differs is the AI flag/review
+        // state on their metadata.
         copy(__DIR__ . '/Fixtures/overlay.jpg', Environment::getPublicPath() . '/fileadmin/overlay-flagged.jpg');
         copy(__DIR__ . '/Fixtures/overlay.jpg', Environment::getPublicPath() . '/fileadmin/overlay-plain.jpg');
+        copy(__DIR__ . '/Fixtures/overlay.jpg', Environment::getPublicPath() . '/fileadmin/overlay-reviewed.jpg');
     }
 
     private function renderImage(int $fileUid, string $mode): string
@@ -81,6 +83,21 @@ final class ImageOverlayPartialTest extends FunctionalTestCase
         self::assertStringContainsString('ai_generated_black.svg', $output);
         // Core's own markup still has to come through untouched.
         self::assertStringContainsString('image-embed-item', $output);
+    }
+
+    /**
+     * Unlike text, a human review never lifts the disclosure duty for images
+     * (EU AI Act Article 50(4)) - the marker has to stay regardless of review
+     * status. Regression test for the bug fixed after 98fc775, which hid the
+     * marker for reviewed files too, not just reviewed text records.
+     */
+    #[Test]
+    public function flaggedAndReviewedImageStaysMarkedInOverlayMode(): void
+    {
+        $output = $this->renderImage(3, 'overlay');
+
+        self::assertStringContainsString('class="b_ai-label"', $output);
+        self::assertStringContainsString('ai_generated_black.svg', $output);
     }
 
     #[Test]

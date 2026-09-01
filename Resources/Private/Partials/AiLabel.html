@@ -30,22 +30,29 @@
 <f:if condition="{file}">
     <f:then>
         <f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
+		<f:if condition="{aiMetadata.flagged}">
+			<f:render section="aiMetadata" arguments="{aiMetadata: aiMetadata, variant: variant}" />
+		</f:if>
     </f:then>
     <f:else if="{record}">
-        <f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: record)}"/>
+		<f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: record)}"/>
+		<f:if condition="{aiMetadata.flagged} && !{aiMetadata.reviewed}">
+			<f:render section="aiMetadata" arguments="{aiMetadata: aiMetadata, variant: variant}" />
+		</f:if>
     </f:else>
 </f:if>
-<f:if condition="{aiMetadata.flagged} && !{aiMetadata.reviewed}">
-    <f:asset.css identifier="ai-label" href="EXT:ai_label/Resources/Public/Css/fe-ai-label.css"/>
-    <div class="b_ai-label">
-        <f:switch expression="{aiMetadata.origin.value}">
-            <f:case value="1">
-                <f:image width="83" height="16" src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
-            </f:case>
-            <f:case value="2">
-                <f:image width="83" height="18" src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
-            </f:case>
-        </f:switch>
-    </div>
-</f:if>
+<f:section name="aiMetadata">
+	<f:asset.css identifier="ai-label" href="EXT:ai_label/Resources/Public/Css/fe-ai-label.css"/>
+	<div class="b_ai-label">
+		<f:switch expression="{aiMetadata.origin.value}">
+			<f:case value="1">
+				<f:image width="83" height="16" src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
+			</f:case>
+			<f:case value="2">
+				<f:image width="83" height="18" src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
+			</f:case>
+		</f:switch>
+	</div>
+</f:section>
+
 </html>

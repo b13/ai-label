@@ -6,8 +6,10 @@ sys_file
 ,uid,pid,storage,identifier,identifier_hash,folder_hash,extension,mime_type,name,sha1,size,type
 ,1,0,1,/overlay-flagged.jpg,"1111111111111111111111111111111111111111","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,overlay-flagged.jpg,"115eefedbb26c24a1629ac073d3ba0e00c5b5af5",1037,2
 ,2,0,1,/overlay-plain.jpg,"2222222222222222222222222222222222222222","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,overlay-plain.jpg,"115eefedbb26c24a1629ac073d3ba0e00c5b5af5",1037,2
+,3,0,1,/overlay-reviewed.jpg,"3333333333333333333333333333333333333333","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,overlay-reviewed.jpg,"115eefedbb26c24a1629ac073d3ba0e00c5b5af5",1037,2
 
 sys_file_metadata
 ,uid,pid,file,tx_ailabel_metadata
 ,1,0,1,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
 ,2,0,2,\NULL
+,3,0,3,"{""origin"":1,""reviewed_by"":1,""reviewed_timestamp"":1000}"

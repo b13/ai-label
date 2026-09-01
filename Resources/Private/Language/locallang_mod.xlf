@@ -63,6 +63,9 @@
             <trans-unit id="overview.stats.reviewRequired.info">
                 <source>Flagged records nobody has reviewed yet.</source>
             </trans-unit>
+            <trans-unit id="overview.filter.site">
+                <source>Site</source>
+            </trans-unit>
             <trans-unit id="overview.filter.table">
                 <source>Table</source>
             </trans-unit>

@@ -22,7 +22,7 @@ use B13\AiLabel\Domain\Model\AiMetadata;
 final class AfterRecordIsBuiltEvent
 {
     /**
-     * @param array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string} $record
+     * @param array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string} $record
      * @param array<string, mixed> $row
      */
     public function __construct(
@@ -31,7 +31,7 @@ final class AfterRecordIsBuiltEvent
     ) {
     }
 
-    /** @return array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, ...} */
+    /** @return array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string, ...} */
     public function getRecord(): array
     {
         return $this->record;

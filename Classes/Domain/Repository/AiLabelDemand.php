@@ -45,6 +45,10 @@ final class AiLabelDemand
         private string $origin = '',
         private string $reviewStatus = '',
         private string $search = '',
+        // Not validated against ApplicableTablesProvider/SiteFinder here, same as
+        // $table isn't validated against it either - an unrecognised value just
+        // matches nothing in AiMetadataRecordFinder::filterAndSort(), no crash.
+        private string $site = '',
     ) {
         if (!in_array($orderField, self::ORDER_FIELDS, true)) {
             $orderField = self::DEFAULT_ORDER_FIELD;
@@ -81,6 +85,7 @@ final class AiLabelDemand
             (string)($demand['origin'] ?? ''),
             (string)($demand['review_status'] ?? ''),
             trim((string)($demand['search'] ?? '')),
+            (string)($demand['site'] ?? ''),
         );
     }
 
@@ -152,9 +157,19 @@ final class AiLabelDemand
         return $this->search !== '';
     }
 
+    public function getSite(): string
+    {
+        return $this->site;
+    }
+
+    public function hasSite(): bool
+    {
+        return $this->site !== '';
+    }
+
     public function hasConstraints(): bool
     {
-        return $this->hasTable() || $this->hasOrigin() || $this->hasReviewStatus() || $this->hasSearch();
+        return $this->hasTable() || $this->hasOrigin() || $this->hasReviewStatus() || $this->hasSearch() || $this->hasSite();
     }
 
     /**
@@ -177,6 +192,9 @@ final class AiLabelDemand
         }
         if ($this->hasSearch()) {
             $parameters['search'] = $this->search;
+        }
+        if ($this->hasSite()) {
+            $parameters['site'] = $this->site;
         }
         return $parameters;
     }

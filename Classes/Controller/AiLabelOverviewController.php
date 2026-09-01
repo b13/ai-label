@@ -12,6 +12,7 @@ namespace B13\AiLabel\Controller;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Backend\SiteAccessResolver;
 use B13\AiLabel\Backend\SortUrlBuilder;
 use B13\AiLabel\Domain\Repository\AiLabelDemand;
 use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
@@ -24,6 +25,7 @@ use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\Components\Buttons\Action\ShortcutButton;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Pagination\SimplePagination;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -39,6 +41,7 @@ final class AiLabelOverviewController
         private readonly AiMetadataBadgeFactory $badgeFactory,
         private readonly UriBuilder $uriBuilder,
         private readonly SortUrlBuilder $sortUrlBuilder,
+        private readonly SiteAccessResolver $siteAccessResolver,
     ) {
     }
 
@@ -57,6 +60,10 @@ final class AiLabelOverviewController
         $allRecords = $this->recordFinder->findFlaggedRecords();
         $statistics = $this->recordFinder->calculateStatistics($allRecords);
         $tables = $this->recordFinder->getDistinctTables($allRecords);
+        // Pointless to offer with only one site in the installation, or when the
+        // current editor's webmounts only ever reach one of several anyway.
+        $showSiteFilter = $this->siteAccessResolver->shouldOfferSiteFilter($this->getBackendUser());
+        $sites = $showSiteFilter ? $this->recordFinder->getDistinctSites($allRecords) : [];
 
         $matchingRecords = $this->recordFinder->filterAndSort($allRecords, $demand);
         $totalCount = count($matchingRecords);
@@ -87,6 +94,8 @@ final class AiLabelOverviewController
             'pagination' => $pagination,
             'statistics' => $statistics,
             'tables' => $tables,
+            'showSiteFilter' => $showSiteFilter,
+            'sites' => $sites,
         ]);
 
         return $view->renderResponse('Overview/Index');
@@ -126,5 +135,10 @@ final class AiLabelOverviewController
     protected function getLanguageService(): LanguageService
     {
         return $GLOBALS['LANG'];
+    }
+
+    protected function getBackendUser(): BackendUserAuthentication
+    {
+        return $GLOBALS['BE_USER'];
     }
 }

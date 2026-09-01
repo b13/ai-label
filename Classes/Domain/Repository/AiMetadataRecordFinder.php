@@ -23,12 +23,15 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
 use TYPO3\CMS\Core\Schema\TcaSchema;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 
@@ -53,10 +56,11 @@ final class AiMetadataRecordFinder
         private readonly TcaSchemaFactory $tcaSchemaFactory,
         private readonly IconFactory $iconFactory,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly SiteFinder $siteFinder,
     ) {
     }
 
-    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}> */
+    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}> */
     public function findFlaggedRecords(): array
     {
         $records = [];
@@ -71,7 +75,7 @@ final class AiMetadataRecordFinder
      * Only tt_content, only on this one page - used to fold "review required"/
      * "reviewed by X on Y" badges into the Page module's content element headers.
      *
-     * @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}>
+     * @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}>
      */
     public function findFlaggedContentElementsOnPage(int $pageId): array
     {
@@ -82,7 +86,7 @@ final class AiMetadataRecordFinder
         return $this->findFlaggedRecordsForTable('tt_content', $pageId);
     }
 
-    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}> */
+    /** @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}> */
     private function findFlaggedRecordsForTable(string $table, ?int $pid): array
     {
         $workspaceId = (int)$this->context->getPropertyFromAspect('workspace', 'id');
@@ -180,8 +184,8 @@ final class AiMetadataRecordFinder
      * blob, and filtering on its decoded content isn't portable across
      * MySQL/SQLite/Postgres without per-database JSON path functions.
      *
-     * @param list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}> $records
-     * @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}>
+     * @param list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}> $records
+     * @return list<array{table: string, uid: int, pid: int, title: string, metadata: AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}>
      */
     public function filterAndSort(array $records, AiLabelDemand $demand): array
     {
@@ -207,6 +211,11 @@ final class AiMetadataRecordFinder
                 }
             }
             if ($demand->hasSearch() && stripos($this->searchableLabel($record), $demand->getSearch()) === false) {
+                return false;
+            }
+            // A record with no resolvable site (e.g. sys_file_metadata, not
+            // page-tree bound) never matches an active site filter.
+            if ($demand->hasSite() && $record['site'] !== $demand->getSite()) {
                 return false;
             }
             return true;
@@ -288,6 +297,28 @@ final class AiMetadataRecordFinder
         return $options;
     }
 
+    /**
+     * Filter-dropdown options for the site select: one per site identifier actually
+     * present in $records - records with no resolvable site (e.g. sys_file_metadata)
+     * contribute nothing here, same as they never match an active site filter.
+     *
+     * @param list<array{site: ?string, siteLabel: string}> $records
+     * @return list<array{value: string, label: string}>
+     */
+    public function getDistinctSites(array $records): array
+    {
+        $options = [];
+        foreach ($records as $record) {
+            if ($record['site'] === null) {
+                continue;
+            }
+            $options[$record['site']] = ['value' => $record['site'], 'label' => $record['siteLabel']];
+        }
+        $options = array_values($options);
+        usort($options, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
+        return $options;
+    }
+
     /** @param array<string, mixed> $row */
     private function buildRecord(string $table, array $row): ?array
     {
@@ -296,6 +327,8 @@ final class AiMetadataRecordFinder
             return null;
         }
 
+        $site = $this->resolveSite($table, $row);
+
         $record = [
             'table' => $table,
             'uid' => (int)$row['uid'],
@@ -303,6 +336,10 @@ final class AiMetadataRecordFinder
             'title' => BackendUtility::getRecordTitle($table, $row),
             'metadata' => $metadata,
             'author' => $this->resolveAuthor($table, $row),
+            // Null for a record with no resolvable site - e.g. sys_file_metadata,
+            // which isn't page-tree bound (pid is a storage folder, not a page).
+            'site' => $site?->getIdentifier(),
+            'siteLabel' => $site !== null ? ($site->getConfiguration()['websiteTitle'] ?: $site->getIdentifier()) : '',
             // Resolves per-row overlays (hidden, workspace state, ...), same as
             // any other backend record listing. Built here rather than in the
             // Fluid template since IconFactory needs the actual DB row, which
@@ -374,6 +411,28 @@ final class AiMetadataRecordFinder
     {
         $title = $schema->getTitle(fn (string $reference): string => $this->getLanguageService()->sL($reference));
         return $title !== '' ? $title : $fallback;
+    }
+
+    /**
+     * getSiteByPageId() walks the given page's own rootline (root line resolution
+     * includes the page itself), so passing a "pages" row's own uid correctly finds
+     * its site even when that row is itself a site root - using its pid instead
+     * would ask for the *parent* page's site, wrong for exactly that case.
+     * Everything else (tt_content, sys_file_metadata, ...) has no page identity of
+     * its own, so its pid - the page it lives on - is the right question to ask.
+     * sys_file_metadata's pid is a storage folder, never a real page in any site's
+     * rootline, so this naturally resolves to null for it (see the fallback below).
+     *
+     * @param array<string, mixed> $row
+     */
+    private function resolveSite(string $table, array $row): ?Site
+    {
+        $pageId = $table === 'pages' ? (int)$row['uid'] : (int)$row['pid'];
+        try {
+            return $this->siteFinder->getSiteByPageId($pageId);
+        } catch (SiteNotFoundException) {
+            return null;
+        }
     }
 
     protected function getLanguageService(): LanguageService

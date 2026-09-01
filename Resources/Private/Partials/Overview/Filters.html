@@ -4,6 +4,17 @@
     <input type="hidden" name="orderField" value="{demand.orderField}">
     <input type="hidden" name="orderDirection" value="{demand.orderDirection}">
     <div class="form-row">
+        <f:if condition="{showSiteFilter}">
+            <div class="form-group">
+                <label for="demand-site" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.site" /></label>
+                <select id="demand-site" class="form-select" name="demand[site]" data-on-change="submit">
+                    <option value=""><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.showAll" /></option>
+                    <f:for each="{sites}" as="siteOption">
+                        <option value="{siteOption.value}" {f:if(condition: '{siteOption.value} == {demand.site}', then: 'selected')}>{siteOption.label}</option>
+                    </f:for>
+                </select>
+            </div>
+        </f:if>
         <div class="form-group">
             <label for="demand-table" class="form-label"><f:translate key="LLL:EXT:ai_label/Resources/Private/Language/locallang_mod.xlf:overview.filter.table" /></label>
             <select id="demand-table" class="form-select" name="demand[table]" data-on-change="submit">

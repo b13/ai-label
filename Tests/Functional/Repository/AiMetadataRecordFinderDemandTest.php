@@ -15,6 +15,7 @@ namespace B13\AiLabel\Tests\Functional\Repository;
 use B13\AiLabel\Domain\Repository\AiLabelDemand;
 use B13\AiLabel\Domain\Repository\AiMetadataRecordFinder;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -41,7 +42,7 @@ final class AiMetadataRecordFinderDemandTest extends FunctionalTestCase
 
     private AiMetadataRecordFinder $recordFinder;
 
-    /** @var list<array{table: string, uid: int, pid: int, title: string, metadata: \B13\AiLabel\Domain\Model\AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string}> */
+    /** @var list<array{table: string, uid: int, pid: int, title: string, metadata: \B13\AiLabel\Domain\Model\AiMetadata, icon: string, tableLabel: string, author: string, reviewBadge: string, site: ?string, siteLabel: string}> */
     private array $allRecords;
 
     protected function setUp(): void
@@ -50,12 +51,38 @@ final class AiMetadataRecordFinderDemandTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/Fixtures/be_users.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/pages.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/AiMetadataRecordFinder/DemandScenario.csv');
+        // Page 1 (tt_content's pid, 201-203) sits in this site's rootline;
+        // sys_file_metadata (301, pid 0) never does, so it resolves to no site -
+        // exactly the "records without a site" case the tests below rely on.
+        $this->writeMinimalSiteConfiguration('main', 1, 'Main Site');
 
         $backendUser = $GLOBALS['BE_USER'] = $this->setUpBackendUser(1);
         $GLOBALS['LANG'] = GeneralUtility::makeInstance(LanguageServiceFactory::class)->createFromUserPreferences($backendUser);
 
         $this->recordFinder = $this->get(AiMetadataRecordFinder::class);
         $this->allRecords = $this->recordFinder->findFlaggedRecords();
+    }
+
+    /**
+     * No helper for this ships with typo3/testing-framework in this TYPO3 version -
+     * writes just enough YAML for SiteFinder::getSiteByPageId() to resolve.
+     */
+    private function writeMinimalSiteConfiguration(string $identifier, int $rootPageId, string $websiteTitle): void
+    {
+        $path = Environment::getConfigPath() . '/sites/' . $identifier;
+        GeneralUtility::mkdir_deep($path);
+        file_put_contents($path . '/config.yaml', <<<YAML
+        rootPageId: {$rootPageId}
+        websiteTitle: '{$websiteTitle}'
+        base: 'https://{$identifier}.example.com/'
+        languages:
+          -
+            title: English
+            enabled: true
+            languageId: 0
+            base: /
+            locale: en_US.UTF-8
+        YAML);
     }
 
     #[Test]
@@ -171,6 +198,54 @@ final class AiMetadataRecordFinderDemandTest extends FunctionalTestCase
             ['value' => 'sys_file_metadata', 'label' => 'File Metadata'],
             ['value' => 'tt_content', 'label' => 'Page Content'],
         ], $this->recordFinder->getDistinctTables($this->allRecords));
+    }
+
+    #[Test]
+    public function buildRecordResolvesTheSiteOfAPageBoundRecord(): void
+    {
+        $contentRecord = $this->findRecordByUid(201);
+        self::assertSame('main', $contentRecord['site']);
+        self::assertSame('Main Site', $contentRecord['siteLabel']);
+    }
+
+    // sys_file_metadata's pid is a storage folder (0), never a real page in any
+    // site's rootline - there is nothing to resolve a site from.
+    #[Test]
+    public function buildRecordResolvesNoSiteForARecordNotBoundToAPage(): void
+    {
+        $fileRecord = $this->findRecordByUid(301);
+        self::assertNull($fileRecord['site']);
+        self::assertSame('', $fileRecord['siteLabel']);
+    }
+
+    #[Test]
+    public function filteringBySiteReturnsOnlyThatSitesRecords(): void
+    {
+        $demand = new AiLabelDemand(site: 'main');
+        $result = $this->recordFinder->filterAndSort($this->allRecords, $demand);
+
+        // 301 (sys_file_metadata) has no site and is excluded, even though it
+        // would otherwise match with an empty/no site filter.
+        self::assertSame([201, 202, 203], $this->sortedUids($result));
+    }
+
+    #[Test]
+    public function filteringByAnUnknownSiteReturnsNothing(): void
+    {
+        $demand = new AiLabelDemand(site: 'some-other-site');
+        $result = $this->recordFinder->filterAndSort($this->allRecords, $demand);
+
+        self::assertSame([], $result);
+    }
+
+    #[Test]
+    public function getDistinctSitesReturnsOnlySitesActuallyPresentInRecords(): void
+    {
+        // Only "main" - the site sys_file_metadata (301) has no site for, so it
+        // never contributes an option (there'd be nothing sensible to label it).
+        self::assertSame([
+            ['value' => 'main', 'label' => 'Main Site'],
+        ], $this->recordFinder->getDistinctSites($this->allRecords));
     }
 
     #[Test]

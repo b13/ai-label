@@ -28,7 +28,7 @@
                 <source>Reviewed</source>
             </trans-unit>
             <trans-unit id="field.reviewed.description">
-                <source>Tick this once a person has genuinely read the content and checked that it is accurate - a quick glance or a spell-check is not enough. By ticking it you take responsibility for what is published. For text, the law accepts such a review instead of a public label; for images, audio and video it does not, so those stay labelled either way. This extension keeps showing the marker for every flagged record regardless, which is always the safe option. Editing a flagged record later clears the review, so the content gets checked again.</source>
+                <source>Tick this once a person has genuinely read the content and checked that it is accurate - a quick glance or a spell-check is not enough. By ticking it you take responsibility for what is published. For text, the law accepts such a review instead of a public label; for images, audio and video it does not, so those stay labelled either way. Editing a flagged record later clears the review, so the content gets checked again.</source>
             </trans-unit>
             <trans-unit id="notice.reviewRequired">
                 <source>Not reviewed</source>

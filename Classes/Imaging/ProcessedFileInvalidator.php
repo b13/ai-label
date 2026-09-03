@@ -13,6 +13,8 @@ namespace B13\AiLabel\Imaging;
  */
 
 use B13\AiLabel\Domain\Model\AiMetadata;
+use B13\AiLabel\Event\BeforeProcessedFileInvalidatedEvent;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -35,6 +37,7 @@ final class ProcessedFileInvalidator
         private readonly ProcessedFileRepository $processedFileRepository,
         private readonly ResourceFactory $resourceFactory,
         private readonly ConnectionPool $connectionPool,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -64,6 +67,7 @@ final class ProcessedFileInvalidator
                 continue;
             }
             if ($processedFile->exists()) {
+                $this->eventDispatcher->dispatch(new BeforeProcessedFileInvalidatedEvent($processedFile->getPublicUrl()));
                 $processedFile->delete(true);
             }
         }

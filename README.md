@@ -212,6 +212,26 @@ final class AddCustomColumnToAiLabelOverview
 more than what's already in `getRecord()` (which table it's from is in
 `getRecord()['table']`).
 
+### Reacting to processed file invalidation
+
+`ProcessedFileInvalidator` (see "baked" mode above) dispatches
+`B13\AiLabel\Event\BeforeProcessedFileInvalidatedEvent` once per processed file
+variant it actually deletes - listen to it to react to the removal elsewhere,
+e.g. purge the same variant from a CDN:
+
+```php
+#[AsEventListener]
+final class PurgeProcessedFileFromCdn
+{
+    public function __invoke(BeforeProcessedFileInvalidatedEvent $event): void
+    {
+        if ($event->processedFilePublicUrl !== null) {
+            $this->cdn->purge($event->processedFilePublicUrl);
+        }
+    }
+}
+```
+
 ## Frontend integration
 
 This extension renders a small AI-origin marker on every content element

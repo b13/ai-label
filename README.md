@@ -331,24 +331,32 @@ cached like any other processed image. Things to know:
 - Only *processed* images are marked. If a template links an original file
   directly, without any processing instruction, it is served unmarked.
 - Changing a file's AI flag, or its per-file watermark override, flushes that
-  file's processed variants, so the change takes effect on the next render.
+  file's processed variants, so the change takes effect on the next render. A
+  change to one of the *global* defaults does not - see the note below.
 
-> **Clear the processed files once, after switching this on.** FAL caches
+> **Flush the processed files after changing a global setting.** FAL caches
 > processed images on the original file, the task and its configuration - none of
-> which change when you flip this setting. Variants generated before you enabled
-> `baked` therefore stay in place, unmarked, and nothing regenerates them. Run
-> this once after enabling (or disabling) the mode:
+> which change when you flip `imageMarker`, `watermarkPosition` or
+> `watermarkColor`, because those live in the extension configuration rather than
+> on a record. Variants rendered before the change therefore stay exactly as they
+> were: unmarked if you just enabled `baked`, carrying the old corner or colour if
+> you changed one of those, and - after switching from `baked` to `overlay` -
+> carrying a burned-in badge that the new mode renders a *second* time on top of.
 >
 > ```
-> vendor/bin/typo3 cleanup:localprocessedfiles --all --dry-run   # inspect first
-> vendor/bin/typo3 cleanup:localprocessedfiles --all
+> vendor/bin/typo3 ailabel:flushWatermarks
 > ```
 >
-> `--all` is required: without it the command only clears orphaned records and
-> stubs, and leaves exactly the valid, already-rendered variants you need gone.
-> The command lives in EXT:lowlevel. This is only needed when the *setting*
-> changes - from then on, changing an individual file's AI flag flushes that
-> file's variants by itself.
+> That flushes the processed variants of every AI-flagged file and nothing else;
+> they are regenerated on the next render. It works in any mode, which matters
+> when you switch *away* from `baked`. Changing an individual file's AI flag or
+> its per-file override still flushes that file by itself - this command is only
+> for the global settings.
+>
+> EXT:lowlevel's `cleanup:localprocessedfiles --all` does the job too, but throws
+> away every processed image in the installation, flagged or not (`--all` is
+> required there: without it the command only clears orphaned records and stubs,
+> and leaves exactly the valid, already-rendered variants you need gone).
 
 Both modes are additive to, not a replacement for, the content element marker -
 that keeps rendering either way, which is also what images falling into any of

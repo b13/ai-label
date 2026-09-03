@@ -68,6 +68,10 @@ final class ProcessedFileInvalidator
             // rendered at its own width), and while it is there AbstractTask::
             // fileNeedsProcessing() stays false, so AiWatermarkProcessor never runs and
             // the file keeps being served unmarked.
+            //
+            // No BeforeProcessedFileInvalidatedEvent for these, on purpose: nothing is
+            // deleted from disk, and getPublicUrl() would hand a listener the *original's*
+            // URL - so "purge that variant" would purge the editor's own file.
             if ($processedFile->usesOriginalFile()) {
                 $this->deleteProcessedFileRecord($processedFile);
                 continue;

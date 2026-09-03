@@ -59,6 +59,8 @@ final class AiWatermarkProcessor extends LocalImageProcessor
             return;
         }
 
-        $this->watermark->applyTo($task->getTargetFile(), $task->getSourceFile());
+        // getTargetFileName() is the name core itself would have given the variant. It
+        // only matters for images that needed no scaling, see AiWatermark::applyTo().
+        $this->watermark->applyTo($task->getTargetFile(), $task->getSourceFile(), $task->getTargetFileName());
     }
 }

@@ -19,6 +19,7 @@ use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Resource\Exception\FileDoesNotExistException;
+use TYPO3\CMS\Core\Resource\ProcessedFile;
 use TYPO3\CMS\Core\Resource\ProcessedFileRepository;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 
@@ -62,8 +63,13 @@ final class ProcessedFileInvalidator
 
         foreach ($this->processedFileRepository->findAllByOriginalFile($file) as $processedFile) {
             // A processed file that "uses the original file" carries the original's own
-            // identifier - deleting it would delete the editor's asset.
+            // identifier - deleting it would delete the editor's asset. Its row still has
+            // to go: FAL stores one whenever an image needs no scaling at all (a hero
+            // rendered at its own width), and while it is there AbstractTask::
+            // fileNeedsProcessing() stays false, so AiWatermarkProcessor never runs and
+            // the file keeps being served unmarked.
             if ($processedFile->usesOriginalFile()) {
+                $this->deleteProcessedFileRecord($processedFile);
                 continue;
             }
             if ($processedFile->exists()) {
@@ -75,6 +81,21 @@ final class ProcessedFileInvalidator
         $this->logger->debug('Flushed processed files for sys_file {file} after an AI flag change.', [
             'file' => (int)$fileUid,
         ]);
+    }
+
+    /**
+     * Deletes the record by hand rather than through ProcessedFileRepository::remove():
+     * that method only arrived in v14, and v13.4 offers nothing but removeAll(), which
+     * would throw away every processed file in the installation.
+     */
+    private function deleteProcessedFileRecord(ProcessedFile $processedFile): void
+    {
+        if (!$processedFile->isPersisted()) {
+            return;
+        }
+        $this->connectionPool
+            ->getConnectionForTable('sys_file_processedfile')
+            ->delete('sys_file_processedfile', ['uid' => (int)$processedFile->getUid()]);
     }
 
     /**

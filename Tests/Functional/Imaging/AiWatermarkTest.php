@@ -14,6 +14,7 @@ namespace B13\AiLabel\Tests\Functional\Imaging;
 
 use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Imaging\AiWatermark;
+use B13\AiLabel\Imaging\ProcessedFileInvalidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Core\Environment;
@@ -197,6 +198,46 @@ final class AiWatermarkTest extends FunctionalTestCase
         $file = $this->get(ResourceFactory::class)->getFileObject($fileUid);
         $processedFile = $file->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600]);
         return $processedFile->getForLocalProcessing(false);
+    }
+
+    // The fixture image is 800px wide, so asking for 800 leaves FAL nothing to scale -
+    // the case a hero image rendered at its own dimensions ends up in.
+    private function processedFileAtNativeWidth(int $fileUid): ProcessedFile
+    {
+        return $this->get(ResourceFactory::class)->getFileObject($fileUid)
+            ->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 800]);
+    }
+
+    /**
+     * An image that needs no scaling gets a processed file that "uses the original file":
+     * one row, pointing at the editor's own asset. Invalidation must drop that row, or
+     * AbstractTask::fileNeedsProcessing() keeps returning false, AiWatermarkProcessor is
+     * never called again, and the file is served unmarked for good - which is what
+     * happens to every image that was already rendered before it was flagged, or before
+     * "baked" was switched on.
+     */
+    #[Test]
+    public function aVariantRenderedBeforeTheModeWasEnabledIsReplacedByAMarkedOne(): void
+    {
+        // 1. Rendered while the marker mode is still off.
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['imageMarker'] = 'off';
+        self::assertTrue(
+            $this->processedFileAtNativeWidth(1)->usesOriginalFile(),
+            'sanity: an image that needs no scaling is served straight from the original'
+        );
+
+        // 2. "baked" is switched on and the variants are flushed.
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['imageMarker'] = 'baked';
+        $this->get(ProcessedFileInvalidator::class)->invalidateForAllFlaggedFiles();
+
+        // 3. The next render is a real processed file carrying the badge. Both fixture
+        //    files hold the same picture, so the flagged one differing means a badge.
+        $marked = $this->processedFileAtNativeWidth(1);
+        self::assertFalse($marked->usesOriginalFile());
+        self::assertNotSame(
+            sha1_file($this->processedFileAtNativeWidth(2)->getForLocalProcessing(false)),
+            sha1_file($marked->getForLocalProcessing(false))
+        );
     }
 
     #[Test]

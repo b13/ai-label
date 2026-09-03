@@ -72,7 +72,7 @@ final class AiWatermark implements LoggerAwareInterface
         return $this->getOrigin($sourceFile) !== AiOrigin::Human;
     }
 
-    public function applyTo(ProcessedFile $processedFile, FileInterface $sourceFile): void
+    public function applyTo(ProcessedFile $processedFile, FileInterface $sourceFile, ?string $processedFileName = null): void
     {
         $origin = $this->getOrigin($sourceFile);
         if ($origin === AiOrigin::Human) {
@@ -103,6 +103,23 @@ final class AiWatermark implements LoggerAwareInterface
         if (!$this->composite($sourceForProcessing, $badgeFile, $targetFile, $width, $position, $targetWidth)) {
             GeneralUtility::unlink_tempfile($targetFile);
             return;
+        }
+
+        // An image that needs no scaling at all - a hero rendered at its own width - left
+        // core's helper with nothing to do, so LocalImageProcessor marked the variant as
+        // "uses the original file" and never gave it a name. Compositing the badge turns it
+        // into a genuine processed file, so it needs the name core sets on its own success
+        // path. Without it the record is written under the original's own basename, where
+        // two processing configurations of the same image collide - and on v13.4, whose
+        // AbstractFile::$name has no empty-string default, ProcessedFile::toArray() fatals
+        // on the resulting null while ProcessedFileRepository::add() serialises the row.
+        //
+        // It has to happen here rather than in the processor: setName() also moves the
+        // identifier into the processing folder, where no file exists yet, so anything that
+        // still has to read the current pixels - getForLocalProcessing() above - has to run
+        // first.
+        if ($processedFileName !== null && $processedFile->usesOriginalFile()) {
+            $processedFile->setName($processedFileName);
         }
 
         $watermarkedInfo = GeneralUtility::makeInstance(ImageInfo::class, $targetFile);

@@ -352,20 +352,25 @@ cached like any other processed image. Things to know:
   override (visible only in `baked` mode) to set a different corner/color/width
   for that one file; leaving any of them at "Inherit global setting" uses the
   site-wide default.
-- Only *processed* images are marked. If a template links an original file
-  directly, without any processing instruction, it is served unmarked.
+- Only *processed* images are marked - which includes images rendered at their
+  own dimensions: `<f:image image="{file}" width="1920" />` on a 1920px wide
+  original still gets the badge, even though there is nothing to scale. What is
+  served unmarked is a genuinely direct link to the file, e.g. `{file.publicUrl}`
+  or a plain `<img src="{f:uri.resource()}" />`, since no processing happens at
+  all there.
 - Changing a file's AI flag, or its per-file watermark override, flushes that
   file's processed variants, so the change takes effect on the next render. A
   change to one of the *global* defaults does not - see the note below.
 
 > **Flush the processed files after changing a global setting.** FAL caches
 > processed images on the original file, the task and its configuration - none of
-> which change when you flip `imageMarker`, `watermarkPosition` or
-> `watermarkColor`, because those live in the extension configuration rather than
-> on a record. Variants rendered before the change therefore stay exactly as they
-> were: unmarked if you just enabled `baked`, carrying the old corner or colour if
-> you changed one of those, and - after switching from `baked` to `overlay` -
-> carrying a burned-in badge that the new mode renders a *second* time on top of.
+> which change when you flip `imageMarker`, `watermarkPosition`, `watermarkColor`
+> or `watermarkWidth`, because those live in the extension configuration rather
+> than on a record. Variants rendered before the change therefore stay exactly as
+> they were: unmarked if you just enabled `baked`, carrying the old corner, colour
+> or size if you changed one of those, and - after switching from `baked` to
+> `overlay` - carrying a burned-in badge that the new mode renders a *second* time
+> on top of.
 >
 > ```
 > vendor/bin/typo3 ailabel:flushWatermarks
@@ -400,6 +405,22 @@ lib.contentElement {
     }
 }
 ```
+
+### Upgrading: flush the processed images once
+
+Images that were already rendered *before* they were flagged - or before
+`imageMarker` was switched to `baked` - can carry a leftover FAL record that
+keeps them from ever being processed again, so they stay unmarked no matter what
+is changed afterwards. This was fixed in the version that introduced this note;
+existing installations need one run to clear the records they already have:
+
+```
+vendor/bin/typo3 ailabel:flushWatermarks
+```
+
+Only relevant for the `baked` image marker mode. The command is safe to run at
+any time - it flushes the processed variants of AI-flagged files and nothing
+else, and they are regenerated on the next render.
 
 ### Upgrading an existing project with manual `AiLabel` calls
 

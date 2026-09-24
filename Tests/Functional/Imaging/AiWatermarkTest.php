@@ -12,6 +12,7 @@ namespace B13\AiLabel\Tests\Functional\Imaging;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Imaging\AiWatermark;
 use B13\AiLabel\Imaging\ProcessedFileInvalidator;
@@ -373,6 +374,29 @@ final class AiWatermarkTest extends FunctionalTestCase
             $this->topLeftCornerBrightness($plain) + 5,
             $this->topLeftCornerBrightness($flagged)
         );
+    }
+
+    #[Test]
+    public function watermarkedVariantReportsTheOriginOfItsFile(): void
+    {
+        $processedFile = $this->get(ResourceFactory::class)->getFileObject(1)
+            ->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600]);
+
+        self::assertSame(AiOrigin::Generated, $this->get(AiWatermark::class)->getWatermarkOrigin($processedFile));
+    }
+
+    #[Test]
+    public function variantWithoutWatermarkReportsNoOrigin(): void
+    {
+        $watermark = $this->get(AiWatermark::class);
+        $factory = $this->get(ResourceFactory::class);
+
+        self::assertNull($watermark->getWatermarkOrigin(
+            $factory->getFileObject(2)->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600])
+        ));
+        self::assertNull($watermark->getWatermarkOrigin(
+            $factory->getFileObject(1)->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 120])
+        ));
     }
 
     #[Test]

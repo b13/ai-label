@@ -11,6 +11,14 @@
                 <source>AI modified</source>
                 <target>KI modifiziert</target>
             </trans-unit>
+            <trans-unit id="alt.aiLabel.generated">
+                <source>(AI generated)</source>
+                <target>(KI generiert)</target>
+            </trans-unit>
+            <trans-unit id="alt.aiLabel.modified">
+                <source>(AI modified)</source>
+                <target>(KI modifiziert)</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

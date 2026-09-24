@@ -383,6 +383,14 @@ cached like any other processed image. Things to know:
   served unmarked is a genuinely direct link to the file, e.g. `{file.publicUrl}`
   or a plain `<img src="{f:uri.resource()}" />`, since no processing happens at
   all there.
+- **The alt text gets the label, too.** Every `<img>` whose `src` points to a
+  watermarked variant gets "(AI generated)"/"(AI modified)" (localized, see
+  `alt.aiLabel.*` in `locallang.xlf`) appended to its alt text; an empty alt
+  becomes the label alone. This works on the generated page HTML, so it covers
+  `f:image`, b13/picture's `i:image` and any other ViewHelper, as well as alt
+  texts overridden on the file reference. Uncached (`USER_INT`) output is not
+  touched, and a page cached before a file was flagged keeps its old alt text
+  until its cache is flushed.
 - Changing a file's AI flag, or its per-file watermark override, flushes that
   file's processed variants, so the change takes effect on the next render. A
   change to one of the *global* defaults does not - see the note below.

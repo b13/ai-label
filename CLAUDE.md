@@ -359,6 +359,15 @@ spec.
   `@import 'EXT:ai_label/Configuration/TypoScript/setup.typoscript'` line in its own
   `setup.typoscript` (the line that actually merges the TypoScript in) - see README.md's
   "Frontend integration" intro for both.
+- **Alt text of watermarked images** (`WatermarkAltTextAppender`, run from
+  `AfterCacheableContentIsGeneratedEvent`; split into v14/Legacy listeners because v13 has no
+  `getContent()`/`setContent()`) rewrites `<img>` tags in the generated page HTML. There is no
+  event around `alternative`, a reference-level alt override beats the metadata one, and
+  `f:image`/`i:image` both read it themselves - HTML post-processing is the one place that
+  covers all of them. `src` is mapped back to its `sys_file_processedfile` row by storage +
+  identifier with a direct query, **not** `ProcessedFileRepository::findByStorageAndIdentifier()`,
+  which stats the file first. Whether a variant carries a badge is decided solely by
+  `AiWatermark::getWatermarkOrigin()`.
 Both ViewHelpers (`render(): ?AiMetadata`) return the `AiMetadata` object directly when
 used inline (`{ailabel:recordMetadata(record: data)}`), but return `null` when the
 optional `as` argument is used to assign a variable directly (same convention as

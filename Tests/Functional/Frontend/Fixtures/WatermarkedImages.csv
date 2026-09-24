@@ -1,0 +1,23 @@
+sys_file_storage
+,uid,pid,name,driver,configuration,is_online,is_browsable,is_public,is_writable,auto_extract_metadata
+,1,0,"fileadmin/","Local","<?xml version=""1.0"" encoding=""utf-8"" standalone=""yes"" ?><T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""basePath""><value index=""vDEF"">fileadmin/</value></field><field index=""pathType""><value index=""vDEF"">relative</value></field></language></sheet></data></T3FlexForms>",1,1,1,1,0
+
+sys_file
+,uid,pid,storage,identifier,identifier_hash,folder_hash,extension,mime_type,name,sha1,size,type
+,1,0,1,/generated.jpg,"1111111111111111111111111111111111111111","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,generated.jpg,"54ae92b5f806ba57ca1971589e1f896bb0387aa1",8354,2
+,2,0,1,/modified.jpg,"2222222222222222222222222222222222222222","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,modified.jpg,"54ae92b5f806ba57ca1971589e1f896bb0387aa1",8354,2
+,3,0,1,/plain.jpg,"3333333333333333333333333333333333333333","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,plain.jpg,"54ae92b5f806ba57ca1971589e1f896bb0387aa1",8354,2
+
+sys_file_metadata
+,uid,pid,file,tx_ailabel_metadata
+,1,0,1,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}"
+,2,0,2,"{""origin"":2,""reviewed_by"":0,""reviewed_timestamp"":0}"
+,3,0,3,\NULL
+
+sys_file_processedfile
+,uid,storage,original,identifier,name,task_type,configuration,configurationsha1,originalfilesha1,checksum,width,height
+,1,1,1,/_processed_/1/a/csm_generated_aaaaaaaaaa.jpg,csm_generated_aaaaaaaaaa.jpg,Image.CropScaleMask,"a:1:{s:5:""width"";i:600;}","1111111111111111111111111111111111111111","54ae92b5f806ba57ca1971589e1f896bb0387aa1",aaaaaaaaaa,600,450
+,2,1,2,/_processed_/2/b/csm_modified_bbbbbbbbbb.jpg,csm_modified_bbbbbbbbbb.jpg,Image.CropScaleMask,"a:1:{s:5:""width"";i:600;}","2222222222222222222222222222222222222222","54ae92b5f806ba57ca1971589e1f896bb0387aa1",bbbbbbbbbb,600,450
+,3,1,3,/_processed_/3/c/csm_plain_cccccccccc.jpg,csm_plain_cccccccccc.jpg,Image.CropScaleMask,"a:1:{s:5:""width"";i:600;}","3333333333333333333333333333333333333333","54ae92b5f806ba57ca1971589e1f896bb0387aa1",cccccccccc,600,450
+,4,1,1,/_processed_/1/a/csm_generated_dddddddddd.jpg,csm_generated_dddddddddd.jpg,Image.CropScaleMask,"a:1:{s:5:""width"";i:100;}","4444444444444444444444444444444444444444","54ae92b5f806ba57ca1971589e1f896bb0387aa1",dddddddddd,100,75
+,5,1,1,/generated.jpg,,Image.CropScaleMask,"a:1:{s:5:""width"";i:800;}","5555555555555555555555555555555555555555","54ae92b5f806ba57ca1971589e1f896bb0387aa1",eeeeeeeeee,800,600

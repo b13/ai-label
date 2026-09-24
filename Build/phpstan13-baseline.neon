@@ -1,6 +1,18 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent\:\:getContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/EventListener/AppendWatermarkLabelToAltText.php
+
+		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent\:\:setContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/EventListener/AppendWatermarkLabelToAltText.php
+
+		-
 			message: '#^Call to an undefined method TYPO3\\CMS\\Backend\\Template\\Components\\DocHeaderComponent\:\:setShortcutContext\(\)\.$#'
 			identifier: method.notFound
 			count: 1

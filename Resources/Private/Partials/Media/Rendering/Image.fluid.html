@@ -9,7 +9,8 @@
 
     Unlike DropIn/After/All.html - an extension point Core ships intentionally empty -
     this overrides a partial that has real content, so the <f:media> call below is a
-    verbatim copy of Core's and has to be kept in sync when Core changes it. It is
+    copy of Core's and has to be kept in sync when Core changes it. The only difference
+    is the alt attribute, which ailabel:alt extends with the AI label in "baked" mode. It is
     identical on v13.4 and v14; only the file name differs (Image.html vs
     Image.fluid.html), which is why this file exists twice.
 
@@ -17,7 +18,7 @@
     actually flagged - in every other case this renders byte-for-byte what Core would
     have rendered, including in "baked" mode, where the marker is already in the pixels.
 </f:comment>
-<f:variable name="renderedImage"><f:media class="image-embed-item" file="{file}" width="{dimensions.width}" height="{dimensions.height}" alt="{file.alternative}" title="{file.title}" loading="{settings.media.lazyLoading}" decoding="{settings.media.imageDecoding}" /></f:variable>
+<f:variable name="renderedImage"><f:media class="image-embed-item" file="{file}" width="{dimensions.width}" height="{dimensions.height}" alt="{ailabel:alt(file: file)}" title="{file.title}" loading="{settings.media.lazyLoading}" decoding="{settings.media.imageDecoding}" /></f:variable>
 <f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
 <f:if condition="{aiMetadata.flagged} && {ailabel:imageMarkerMode()} == 'overlay'">
     <f:then>

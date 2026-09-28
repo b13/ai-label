@@ -377,26 +377,21 @@ final class AiWatermarkTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function watermarkedVariantReportsTheOriginOfItsFile(): void
+    public function flaggedImageReportsItsBakedOrigin(): void
     {
-        $processedFile = $this->get(ResourceFactory::class)->getFileObject(1)
-            ->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600]);
+        $factory = $this->get(ResourceFactory::class);
 
-        self::assertSame(AiOrigin::Generated, $this->get(AiWatermark::class)->getWatermarkOrigin($processedFile));
+        self::assertSame(AiOrigin::Generated, $this->get(AiWatermark::class)->getBakedOrigin($factory->getFileObject(1)));
     }
 
     #[Test]
-    public function variantWithoutWatermarkReportsNoOrigin(): void
+    public function imageWithoutBadgeReportsNoBakedOrigin(): void
     {
         $watermark = $this->get(AiWatermark::class);
         $factory = $this->get(ResourceFactory::class);
 
-        self::assertNull($watermark->getWatermarkOrigin(
-            $factory->getFileObject(2)->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 600])
-        ));
-        self::assertNull($watermark->getWatermarkOrigin(
-            $factory->getFileObject(1)->process(ProcessedFile::CONTEXT_IMAGECROPSCALEMASK, ['width' => 120])
-        ));
+        self::assertNull($watermark->getBakedOrigin($factory->getFileObject(2)));
+        self::assertNull($watermark->getBakedOrigin($factory->getFileObject(3)));
     }
 
     #[Test]

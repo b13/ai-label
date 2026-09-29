@@ -14,6 +14,7 @@ namespace B13\AiLabel\Imaging;
 
 use B13\AiLabel\Configuration\ImageMarkerSettings;
 use B13\AiLabel\Domain\Enum\AiOrigin;
+use B13\AiLabel\Domain\Enum\ImageMarkerMode;
 use B13\AiLabel\Domain\Enum\WatermarkColor;
 use B13\AiLabel\Domain\Enum\WatermarkPosition;
 use B13\AiLabel\Domain\Enum\WatermarkWidth;
@@ -70,6 +71,15 @@ final class AiWatermark implements LoggerAwareInterface
         }
 
         return $this->getOrigin($sourceFile) !== AiOrigin::Human;
+    }
+
+    public function getBakedOrigin(FileInterface $file): ?AiOrigin
+    {
+        if ($this->settings->getMode() !== ImageMarkerMode::Baked || !$this->appliesTo($file)) {
+            return null;
+        }
+
+        return $this->getOrigin($file);
     }
 
     public function applyTo(ProcessedFile $processedFile, FileInterface $sourceFile, ?string $processedFileName = null): void

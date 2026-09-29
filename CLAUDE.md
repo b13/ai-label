@@ -359,6 +359,12 @@ spec.
   `@import 'EXT:ai_label/Configuration/TypoScript/setup.typoscript'` line in its own
   `setup.typoscript` (the line that actually merges the TypoScript in) - see README.md's
   "Frontend integration" intro for both.
+- **Alt text of watermarked images**: `AltViewHelper` (`{ailabel:alt(file: file)}`),
+  used in the `Media/Rendering/Image` partial override and by integrators in their own
+  templates. Labels every flagged image in "baked" mode (`AiWatermark::getBakedOrigin()`), including
+  variants too small to carry a badge - the image is AI-made either way. Deliberately not HTML post-processing of the page
+  (misses `USER_INT`, parses everything) and not `EnrichFileMetaDataEvent` (loses against an alt
+  override on the reference).
 Both ViewHelpers (`render(): ?AiMetadata`) return the `AiMetadata` object directly when
 used inline (`{ailabel:recordMetadata(record: data)}`), but return `null` when the
 optional `as` argument is used to assign a variable directly (same convention as

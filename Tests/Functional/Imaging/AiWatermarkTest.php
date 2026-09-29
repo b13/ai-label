@@ -12,6 +12,7 @@ namespace B13\AiLabel\Tests\Functional\Imaging;
  * of the License, or any later version.
  */
 
+use B13\AiLabel\Domain\Enum\AiOrigin;
 use B13\AiLabel\Domain\Enum\WatermarkWidth;
 use B13\AiLabel\Imaging\AiWatermark;
 use B13\AiLabel\Imaging\ProcessedFileInvalidator;
@@ -68,7 +69,6 @@ final class AiWatermarkTest extends FunctionalTestCase
         $convertPath = trim((string)shell_exec('command -v convert'));
         if ($convertPath !== '') {
             $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = dirname($convertPath) . '/';
-            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path_lzw'] = dirname($convertPath) . '/';
         }
     }
 
@@ -373,6 +373,24 @@ final class AiWatermarkTest extends FunctionalTestCase
             $this->topLeftCornerBrightness($plain) + 5,
             $this->topLeftCornerBrightness($flagged)
         );
+    }
+
+    #[Test]
+    public function flaggedImageReportsItsBakedOrigin(): void
+    {
+        $factory = $this->get(ResourceFactory::class);
+
+        self::assertSame(AiOrigin::Generated, $this->get(AiWatermark::class)->getBakedOrigin($factory->getFileObject(1)));
+    }
+
+    #[Test]
+    public function imageWithoutBadgeReportsNoBakedOrigin(): void
+    {
+        $watermark = $this->get(AiWatermark::class);
+        $factory = $this->get(ResourceFactory::class);
+
+        self::assertNull($watermark->getBakedOrigin($factory->getFileObject(2)));
+        self::assertNull($watermark->getBakedOrigin($factory->getFileObject(3)));
     }
 
     #[Test]

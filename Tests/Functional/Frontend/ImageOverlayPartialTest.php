@@ -134,4 +134,18 @@ final class ImageOverlayPartialTest extends FunctionalTestCase
         self::assertStringNotContainsString('b_ai-label', $output);
         self::assertStringContainsString('image-embed-item', $output);
     }
+
+    #[Test]
+    public function flaggedImageGetsTheLabelInItsAltInBakedMode(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_enabled'] = true;
+        $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
+        $convertPath = trim((string)shell_exec('command -v convert'));
+        if ($convertPath !== '') {
+            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = dirname($convertPath) . '/';
+        }
+
+        self::assertStringContainsString('(AI generated)"', $this->renderImage(1, 'baked'));
+        self::assertStringNotContainsString('(AI generated)', $this->renderImage(2, 'baked'));
+    }
 }

@@ -383,6 +383,16 @@ cached like any other processed image. Things to know:
   served unmarked is a genuinely direct link to the file, e.g. `{file.publicUrl}`
   or a plain `<img src="{f:uri.resource()}" />`, since no processing happens at
   all there.
+- **The alt text gets the label, too.** `{ailabel:alt(file: file)}` returns the
+  image's alt text with "(AI generated)"/"(AI modified)" (localized, see
+  `alt.aiLabel.*` in `locallang.xlf`) appended whenever the image carries the
+  badge; an empty alt becomes the label alone. An alt text overridden on the
+  file reference is respected. fluid_styled_content's images get this
+  automatically through this extension's `Media/Rendering/Image` partial; in
+  your own templates, or with b13/picture's `i:image`, use it directly:
+  ```html
+  <f:image image="{image}" width="800" alt="{ailabel:alt(file: image)}" />
+  ```
 - Changing a file's AI flag, or its per-file watermark override, flushes that
   file's processed variants, so the change takes effect on the next render. A
   change to one of the *global* defaults does not - see the note below.

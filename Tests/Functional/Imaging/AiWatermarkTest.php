@@ -69,7 +69,6 @@ final class AiWatermarkTest extends FunctionalTestCase
         $convertPath = trim((string)shell_exec('command -v convert'));
         if ($convertPath !== '') {
             $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = dirname($convertPath) . '/';
-            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path_lzw'] = dirname($convertPath) . '/';
         }
     }
 

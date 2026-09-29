@@ -143,7 +143,6 @@ final class ImageOverlayPartialTest extends FunctionalTestCase
         $convertPath = trim((string)shell_exec('command -v convert'));
         if ($convertPath !== '') {
             $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = dirname($convertPath) . '/';
-            $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path_lzw'] = dirname($convertPath) . '/';
         }
 
         self::assertStringContainsString('(AI generated)"', $this->renderImage(1, 'baked'));

@@ -26,6 +26,7 @@
         "source": "https://github.com/b13/ai-label"
     },
     "require": {
+        "typo3/cms-core": "^13.4 || ^14.3",
         "typo3/cms-backend": "^13.4 || ^14.3",
         "typo3/cms-frontend": "^13.4 || ^14.3"
     },

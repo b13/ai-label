@@ -102,6 +102,16 @@ final class AiLabelPartialTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function usesConfiguredIconPathWithoutTrailingSlash(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['iconPath'] = 'EXT:ai_label/Resources/Public/Icons';
+
+        $output = $this->renderPartial(['tx_ailabel_metadata' => '{"origin":1,"reviewed_by":0,"reviewed_timestamp":0}']);
+
+        self::assertStringContainsString('Resources/Public/Icons/ai_generated_black.svg', $output);
+    }
+
+    #[Test]
     public function unflaggedRecordRendersNothing(): void
     {
         $output = $this->renderPartial(['tx_ailabel_metadata' => null]);

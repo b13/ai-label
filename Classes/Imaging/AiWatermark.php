@@ -234,7 +234,7 @@ final class AiWatermark implements LoggerAwareInterface
             return null;
         }
 
-        $absolutePath = GeneralUtility::getFileAbsFileName('EXT:ai_label/Resources/Public/Icons/' . $name);
+        $absolutePath = GeneralUtility::getFileAbsFileName($this->settings->getIconPath() . $name);
 
         return $absolutePath !== '' && file_exists($absolutePath) ? $absolutePath : null;
     }

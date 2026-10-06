@@ -12,9 +12,9 @@
     - record (optional): the tt_content (or other applicable table) row to
       check, e.g. arguments="{record: record}"
     - variant (optional, default "black"): one of "black", "black_transparent",
-      "white", "white_transparent" - selects which of the bundled icon sets to
-      use. Projects that ship their own icon set can override this partial via
-      a higher-priority partialRootPaths entry.
+      "white", "white_transparent" - selects which icon of the icon set to
+      use. The icon set's folder is the "iconPath" extension configuration,
+      the same one the badge burned into images uses.
 </f:comment>
 <f:argument name="file" type="TYPO3\CMS\Core\Resource\FileReference" optional="{true}"/>
 <f:argument name="record" type="array" optional="{true}"/>
@@ -43,13 +43,14 @@
 </f:if>
 <f:section name="aiMetadata">
 	<f:asset.css identifier="ai-label" href="EXT:ai_label/Resources/Public/Css/fe-ai-label.css"/>
+	<f:variable name="iconPath" value="{ailabel:iconPath()}"/>
 	<div class="b_ai-label">
 		<f:switch expression="{aiMetadata.origin.value}">
 			<f:case value="1">
-				<f:image width="83" height="16" src="EXT:ai_label/Resources/Public/Icons/ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
+				<f:image width="83" height="16" src="{iconPath}ai_generated_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.generated', extensionName: 'ai_label')}"/>
 			</f:case>
 			<f:case value="2">
-				<f:image width="83" height="18" src="EXT:ai_label/Resources/Public/Icons/ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
+				<f:image width="83" height="18" src="{iconPath}ai_modified_{variant}.svg" class="b_ai-label__icon" alt="{f:translate(key: 'aiLabel.modified', extensionName: 'ai_label')}"/>
 			</f:case>
 		</f:switch>
 	</div>

@@ -24,6 +24,8 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 // which also runs outside any site context (backend thumbnails, CLI, scheduler).
 final class ImageMarkerSettings
 {
+    private const DEFAULT_ICON_PATH = 'EXT:ai_label/Resources/Public/Icons/';
+
     public function __construct(private readonly ExtensionConfiguration $extensionConfiguration)
     {
     }
@@ -74,5 +76,17 @@ final class ImageMarkerSettings
         }
 
         return (is_numeric($value) ? WatermarkWidth::tryFrom((int)$value) : null) ?? WatermarkWidth::Regular;
+    }
+
+    public function getIconPath(): string
+    {
+        try {
+            $value = $this->extensionConfiguration->get('ai_label', 'iconPath');
+        } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+            return self::DEFAULT_ICON_PATH;
+        }
+        $value = is_string($value) ? trim($value) : '';
+
+        return $value === '' ? self::DEFAULT_ICON_PATH : rtrim($value, '/') . '/';
     }
 }

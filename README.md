@@ -399,8 +399,8 @@ cached like any other processed image. Things to know:
 
 > **Flush the processed files after changing a global setting.** FAL caches
 > processed images on the original file, the task and its configuration - none of
-> which change when you flip `imageMarker`, `watermarkPosition`, `watermarkColor`
-> or `watermarkWidth`, because those live in the extension configuration rather
+> which change when you flip `imageMarker`, `watermarkPosition`, `watermarkColor`,
+> `watermarkWidth` or `iconPath`, because those live in the extension configuration rather
 > than on a record. Variants rendered before the change therefore stay exactly as
 > they were: unmarked if you just enabled `baked`, carrying the old corner, colour
 > or size if you changed one of those, and - after switching from `baked` to
@@ -430,10 +430,31 @@ the exclusions above fall back to the element marker alone.
 
 ### Overriding the default markup/icons
 
-Projects that want their own icon set, markup, or positioning can override the
-partial with a higher-priority `partialRootPaths` entry pointing to their own
-`AiLabel.html` (same filename, same argument contract - optional `file`,
-`record`, `variant`):
+**Own icon set**: set the extension configuration `iconPath` (default
+`EXT:ai_label/Resources/Public/Icons/`) to a public folder of your own. It is the
+one setting for both markers - the `AiLabel` partial reads it through
+`{ailabel:iconPath()}`, the badge burned into images in `baked` mode reads it
+directly. The folder has to contain the same file names as the bundled one:
+
+- `ai_generated_<variant>.svg` / `ai_modified_<variant>.svg` for every `variant`
+  your templates pass (default `black`)
+- `ai_generated_black.png`, `ai_generated_white.png`, `ai_modified_black.png`,
+  `ai_modified_white.png` for `baked` mode
+
+```php
+// config/system/settings.php
+'EXTENSIONS' => [
+    'ai_label' => [
+        'iconPath' => 'EXT:my_sitepackage/Resources/Public/AiLabel/',
+    ],
+],
+```
+
+Run `vendor/bin/typo3 ailabel:flushWatermarks` afterwards, see the note above.
+
+**Own markup or positioning**: override the partial with a higher-priority
+`partialRootPaths` entry pointing to your own `AiLabel.html` (same filename, same
+argument contract - optional `file`, `record`, `variant`):
 
 ```typoscript
 lib.contentElement {

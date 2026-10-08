@@ -9,3 +9,6 @@ watermarkColor = black
 
 # cat=basic//40; type=options[160px (default)=160,80px (small)=80]; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.watermarkWidth
 watermarkWidth = 160
+
+# cat=basic//50; type=string; label=LLL:EXT:ai_label/Resources/Private/Language/locallang_db.xlf:config.iconPath
+iconPath = EXT:ai_label/Resources/Public/Icons/

@@ -181,4 +181,29 @@ final class ImageMarkerSettingsTest extends FunctionalTestCase
         unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
         self::assertSame(WatermarkWidth::Regular, $this->get(ImageMarkerSettings::class)->getWatermarkWidth());
     }
+
+    public static function iconPathDataProvider(): array
+    {
+        return [
+            'with trailing slash' => ['EXT:site/Resources/Public/Icons/', 'EXT:site/Resources/Public/Icons/'],
+            'without trailing slash' => ['EXT:site/Resources/Public/Icons', 'EXT:site/Resources/Public/Icons/'],
+            'empty' => ['', 'EXT:ai_label/Resources/Public/Icons/'],
+            'whitespace' => ['  ', 'EXT:ai_label/Resources/Public/Icons/'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('iconPathDataProvider')]
+    public function configuredIconPathIsResolved(string $configured, string $expected): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['iconPath'] = $configured;
+        self::assertSame($expected, $this->get(ImageMarkerSettings::class)->getIconPath());
+    }
+
+    #[Test]
+    public function aMissingIconPathConfigurationFallsBackToTheBundledIcons(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']);
+        self::assertSame('EXT:ai_label/Resources/Public/Icons/', $this->get(ImageMarkerSettings::class)->getIconPath());
+    }
 }

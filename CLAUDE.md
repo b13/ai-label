@@ -312,8 +312,9 @@ spec.
   `Resources/Public/Icons/ai_{generated,modified}_{black,white}{,_transparent}.svg` via
   `f:image` (deliberately not `ac:svg`/`b13/assetcollector`, to avoid a new hard
   dependency - the user explicitly asked for `f:image`), and ships its own
-  `<f:asset.css>` block. `variant` argument (default `black`) picks the icon color/opacity
-  set.
+  `<f:asset.css>` block. `variant` argument picks the icon color/opacity set: default
+  `black` for a record; for a file `WatermarkViewHelper` resolves it, so the marker matches
+  the burned-in badge (per-file color > `variant` > global `watermarkColor`).
 - **`Resources/Private/Partials/DropIn/After/All.html`**: overrides
   `EXT:fluid_styled_content`'s own `Partials/DropIn/After/All.html` - an extension
   point Core ships intentionally empty (just an `<f:comment>` placeholder), rendered

@@ -11,10 +11,13 @@
     - file (optional): a FAL file reference, e.g. arguments="{file: image}"
     - record (optional): the tt_content (or other applicable table) row to
       check, e.g. arguments="{record: record}"
-    - variant (optional, default "black"): one of "black", "black_transparent",
-      "white", "white_transparent" - selects which icon of the icon set to
-      use. The icon set's folder is the "iconPath" extension configuration,
-      the same one the badge burned into images uses.
+    - variant (optional): one of "black", "black_transparent", "white",
+      "white_transparent" - selects which icon of the icon set to use. The icon
+      set's folder is the "iconPath" extension configuration, the same one the
+      badge burned into images uses. Default for a record: "black". For a file
+      the color follows the badge burned into it (ailabel:watermark): the file's
+      own watermark color wins over "variant", "variant" over the global
+      watermarkColor.
 </f:comment>
 <f:argument name="file" type="TYPO3\CMS\Core\Resource\FileReference" optional="{true}"/>
 <f:argument name="record" type="array" optional="{true}"/>
@@ -24,19 +27,20 @@
     argument is completely absent, not when it's explicitly passed as an
     empty/null value (which callers forwarding their own possibly-unset
     "variant" variable, e.g. arguments="{variant: variant}", will do) - the
-    truthy check below covers both cases.
+    truthy checks below cover both cases.
 </f:comment>
-<f:variable name="variant" value="{f:if(condition: variant, then: variant, else: 'black')}"/>
 <f:if condition="{file}">
     <f:then>
         <f:variable name="aiMetadata" value="{ailabel:fileMetadata(fileReference: file)}"/>
 		<f:if condition="{aiMetadata.flagged}">
-			<f:render section="aiMetadata" arguments="{aiMetadata: aiMetadata, variant: variant}" />
+			<f:variable name="watermark" value="{ailabel:watermark(file: file, variant: variant)}"/>
+			<f:render section="aiMetadata" arguments="{aiMetadata: aiMetadata, variant: watermark.variant}" />
 		</f:if>
     </f:then>
     <f:else if="{record}">
 		<f:variable name="aiMetadata" value="{ailabel:recordMetadata(record: record)}"/>
 		<f:if condition="{aiMetadata.flagged} && !{aiMetadata.reviewed}">
+			<f:variable name="variant" value="{f:if(condition: variant, then: variant, else: 'black')}"/>
 			<f:render section="aiMetadata" arguments="{aiMetadata: aiMetadata, variant: variant}" />
 		</f:if>
     </f:else>

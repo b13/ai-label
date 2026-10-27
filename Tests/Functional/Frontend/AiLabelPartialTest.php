@@ -42,6 +42,15 @@ final class AiLabelPartialTest extends FunctionalTestCase
         'typo3conf/ext/ai_label',
     ];
 
+    // tx_ailabel_watermark only exists in "baked" mode
+    protected array $configurationToUseInTestInstance = [
+        'EXTENSIONS' => [
+            'ai_label' => [
+                'imageMarker' => 'baked',
+            ],
+        ],
+    ];
+
     private function renderPartial(array $data, ?string $variant = null): string
     {
         $view = $this->get(ViewFactoryInterface::class)->create(new ViewFactoryData(
@@ -59,7 +68,7 @@ final class AiLabelPartialTest extends FunctionalTestCase
      * (that is what Media/Rendering/Image does in "overlay" mode). Same partial, but a
      * deliberately different review rule - see the reviewed-file test below.
      */
-    private function renderPartialForFile(int $fileUid): string
+    private function renderPartialForFile(int $fileUid, ?string $variant = null): string
     {
         $view = $this->get(ViewFactoryInterface::class)->create(new ViewFactoryData(
             templateRootPaths: [__DIR__ . '/Fixtures/Templates/'],
@@ -68,6 +77,7 @@ final class AiLabelPartialTest extends FunctionalTestCase
         // No file on disk needed: the partial only reads metadata properties, and
         // getProperty() never touches the filesystem.
         $view->assign('file', new FileReference(['uid_local' => $fileUid]));
+        $view->assign('variant', $variant);
 
         return trim($view->render('RenderAiLabelForFile'));
     }
@@ -167,5 +177,39 @@ final class AiLabelPartialTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/Fixtures/OverlayImages.csv');
 
         self::assertSame('', $this->renderPartialForFile(2));
+    }
+
+    /**
+     * The marker of a file has to match the badge burned into it, so the editor's
+     * per-file watermark color wins over the template's variant.
+     */
+    #[Test]
+    public function fileMarkerFollowsThePerFileWatermarkColor(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/WatermarkImages.csv');
+
+        self::assertStringContainsString('ai_generated_white.svg', $this->renderPartialForFile(2));
+        self::assertStringContainsString('ai_generated_white.svg', $this->renderPartialForFile(2, 'black'));
+        self::assertStringContainsString('ai_generated_white_transparent.svg', $this->renderPartialForFile(2, 'black_transparent'));
+    }
+
+    #[Test]
+    public function fileMarkerFollowsTheGlobalWatermarkColor(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/WatermarkImages.csv');
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = 'white';
+
+        self::assertStringContainsString('ai_generated_white.svg', $this->renderPartialForFile(1));
+        self::assertStringContainsString('ai_generated_black.svg', $this->renderPartialForFile(1, 'black'));
+    }
+
+    #[Test]
+    public function recordMarkerIgnoresTheGlobalWatermarkColor(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['ai_label']['watermarkColor'] = 'white';
+
+        $output = $this->renderPartial(['tx_ailabel_metadata' => '{"origin":1,"reviewed_by":0,"reviewed_timestamp":0}']);
+
+        self::assertStringContainsString('ai_generated_black.svg', $output);
     }
 }

@@ -1,0 +1,15 @@
+sys_file_storage
+,uid,pid,name,driver,configuration,is_online,is_browsable,is_public,auto_extract_metadata
+,1,0,"fileadmin/","Local","<?xml version=""1.0"" encoding=""utf-8"" standalone=""yes"" ?><T3FlexForms><data><sheet index=""sDEF""><language index=""lDEF""><field index=""basePath""><value index=""vDEF"">fileadmin/</value></field><field index=""pathType""><value index=""vDEF"">relative</value></field></language></sheet></data></T3FlexForms>",1,1,1,0
+
+sys_file
+,uid,pid,storage,identifier,identifier_hash,folder_hash,extension,mime_type,name,sha1,size,type
+,1,0,1,/inherit.jpg,"1111111111111111111111111111111111111111","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,inherit.jpg,"cccccccccccccccccccccccccccccccccccccccc",0,2
+,2,0,1,/white.jpg,"2222222222222222222222222222222222222222","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,white.jpg,"cccccccccccccccccccccccccccccccccccccccc",0,2
+,3,0,1,/top-left.jpg,"3333333333333333333333333333333333333333","bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",jpg,image/jpeg,top-left.jpg,"cccccccccccccccccccccccccccccccccccccccc",0,2
+
+sys_file_metadata
+,uid,pid,file,tx_ailabel_metadata,tx_ailabel_watermark
+,1,0,1,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}",\NULL
+,2,0,2,"{""origin"":1,""reviewed_by"":0,""reviewed_timestamp"":0}","{""color"":""white"",""position"":null,""width"":null}"
+,3,0,3,"{""origin"":2,""reviewed_by"":0,""reviewed_timestamp"":0}","{""color"":null,""position"":""top-left"",""width"":80}"

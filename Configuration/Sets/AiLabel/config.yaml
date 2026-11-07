@@ -1,4 +1,4 @@
 name: b13/ai-label
 label: AI Label
-dependencies:
+optionalDependencies:
   - typo3/fluid-styled-content
